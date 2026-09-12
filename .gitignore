@@ -1,0 +1,24 @@
+# Сборка Qt/qmake
+*.pro.user
+Makefile
+/build*/
+/RPMS/
+*.o
+moc_*
+qrc_*
+
+# Артефакты apptool (Aurora SDK BT)
+.apptool/
+RPMS/
+
+# Python
+__pycache__/
+*.pyc
+
+# Клонируемые исходники NFC-стека (см. nfcd-mifare-classic/scripts/fetch-nfc-stack.sh)
+/nfcd-mifare-classic/src/
+
+# Артефакты сборки плагина
+/nfcd-mifare-classic/stage/
+/nfcd-mifare-classic/tools/nci-smoke
+/nfcd-mifare-classic/tools/nci-init

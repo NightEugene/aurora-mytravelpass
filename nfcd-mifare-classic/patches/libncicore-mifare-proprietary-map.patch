@@ -1,0 +1,29 @@
+diff --git a/src/nci_transition_idle_to_discovery.c b/src/nci_transition_idle_to_discovery.c
+index 653cd8d..b294e39 100644
+--- a/src/nci_transition_idle_to_discovery.c
++++ b/src/nci_transition_idle_to_discovery.c
+@@ -423,12 +423,22 @@ nci_transition_idle_to_discover_map(
+ 
+                 NCI_PROTOCOL_T2T,
+                 NCI_DISCOVER_MAP_MODE_POLL,
+-                NCI_RF_INTERFACE_FRAME
++                NCI_RF_INTERFACE_FRAME,
++
++                /*
++                 * MIFARE Classic (Подорожник и др.): проприетарный
++                 * протокол/интерфейс NXP. Без этой записи чип активирует
++                 * такие карты как T2T, и Crypto1-обмен невозможен.
++                 */
++                NCI_PROTOCOL_PROPRIETARY,
++                NCI_DISCOVER_MAP_MODE_POLL,
++                NCI_RF_INTERFACE_PROPRIETARY
+             };
+ 
+             GDEBUG("  T1T/Poll/Frame");
+             GDEBUG("  T2T/Poll/Frame");
+-            cmd->data[0] += 2; /* Number of entries */
++            GDEBUG("  Proprietary/Poll/Proprietary");
++            cmd->data[0] += 3; /* Number of entries */
+             g_byte_array_append(cmd, ARRAY_AND_SIZE(entries));
+         }
+         if (sm->techs & NCI_TECH_F_POLL) {

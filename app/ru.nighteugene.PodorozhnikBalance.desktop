@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=ru.nighteugene.PodorozhnikBalance
+Exec=/usr/bin/ru.nighteugene.PodorozhnikBalance
+Name=Баланс Подорожник
+Name[en]=Podorozhnik Balance
+
+[X-Application]
+Permissions=NFC
+OrganizationName=ru.nighteugene
+ApplicationName=PodorozhnikBalance
+ExecDBus=/usr/bin/ru.nighteugene.PodorozhnikBalance

@@ -1,0 +1,44 @@
+diff --git a/src/pn54x_io.c b/src/pn54x_io.c
+index 64f11e6..7399dd9 100644
+--- a/src/pn54x_io.c
++++ b/src/pn54x_io.c
+@@ -55,6 +55,12 @@
+ #define NCI_PACKET_HEADER_SIZE (3)
+ 
+ #define PN54X_SET_PWR   _IOW(0xe9, 0x01, unsigned int)
++/*
++ * Драйвер nxpnfc (NXP PN7160) использует _IOW(0xE9, 0x01, long) —
++ * на 64-битном ядре номер команды отличается в поле размера.
++ * Пробуем оба варианта (см. pn54x_io_set_power).
++ */
++#define NXPNFC_SET_PWR_L64  (0x4008E901)
+ #define PN54X_PWR_ON    (1)
+ #define PN54X_PWR_OFF   (0)
+ 
+@@ -597,9 +603,24 @@ pn54x_io_set_power(
+ 
+         if (pn54x_io_open(self)) {
+             const unsigned long pwr = on ? PN54X_PWR_ON : PN54X_PWR_OFF;
++            gboolean ok = pn54x_system_ioctl(self->fd, PN54X_SET_PWR, pwr) >= 0;
+ 
+-            if (pn54x_system_ioctl(self->fd, PN54X_SET_PWR, pwr) >= 0) {
+-                GDEBUG("Power %s", on ? "on" : "off");
++            if (!ok && errno == ENOTTY) {
++                /* Драйвер nxpnfc (PN7160) на 64-битном ядре: _IOW(..., long) */
++                ok = pn54x_system_ioctl(self->fd, NXPNFC_SET_PWR_L64, pwr) >= 0;
++                if (ok) {
++                    GDEBUG("Power %s (nxpnfc ioctl64)", on ? "on" : "off");
++                }
++            }
++            if (!ok && errno == ENOTTY) {
++                /*
++                 * Драйвер без ioctl управления питанием: питанием NFCC
++                 * управляет сам драйвер/DT. Считаем питание включённым.
++                 */
++                GDEBUG("No power control ioctl, assuming power is always on");
++                ok = TRUE;
++            }
++            if (ok) {
+                 if (!on) {
+                     pn54x_io_close(self);
+                 }
