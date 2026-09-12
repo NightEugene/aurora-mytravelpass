@@ -42,7 +42,11 @@
 <context>
     <name>MainPage</name>
     <message>
-        <source>Баланс Подорожника</source>
+        <source>Подорожник</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Приложите карту</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -51,22 +55,6 @@
     </message>
     <message>
         <source>NFC выключен — включите его в настройках</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Чтение карты…</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Баланс</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Номер карты</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>UID карты</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -79,6 +67,55 @@
     </message>
     <message>
         <source>Попробуйте приложить карту ещё раз</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Баланс
+подорожника</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ОСТАТОК</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ИЗМЕНЕНИЯ</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ИНФО</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Наземный транспорт</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Следующая %1 ₽</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Метро</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>История появится после первого чтения</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Номер карты</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>UID карты</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Время чтения</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Версия</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

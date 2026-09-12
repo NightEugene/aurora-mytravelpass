@@ -10,8 +10,10 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusReply>
 #include <QDBusServiceWatcher>
+#include <QDateTime>
 #include <QDebug>
 #include <QPair>
+#include <QSettings>
 #include <QTimer>
 
 namespace {
@@ -68,6 +70,9 @@ const char blockNumber   = 0;
 CardReader::CardReader(QObject *parent)
     : QObject(parent)
 {
+    // История чтений (вкладка «ИЗМЕНЕНИЯ»): «dd.MM.yyyy HH:mm|баланс»
+    m_history = QSettings().value(QStringLiteral("history")).toStringList();
+
     // nfcd может стартовать позже приложения (например, в эмуляторе его нет вовсе)
     auto *watcher = new QDBusServiceWatcher(nfcService, QDBusConnection::systemBus(),
                                             QDBusServiceWatcher::WatchForRegistration, this);
@@ -79,6 +84,34 @@ CardReader::CardReader(QObject *parent)
 void CardReader::onServiceRegistered()
 {
     connectDaemon();
+}
+
+void CardReader::refresh()
+{
+    if (m_state == Reading)
+        return; // чтение уже идёт
+
+    releaseTag();
+    m_balanceText.clear();
+    m_balanceKopecks = 0;
+    m_lastReadTime.clear();
+    m_cardNumber.clear();
+    m_uidText.clear();
+    m_errorText.clear();
+    setState(Waiting);
+    emit dataChanged();
+    emit errorChanged();
+    // Если карта уже у телефона — начать чтение сразу
+    onTargetPresentChanged(true);
+}
+
+void CardReader::clearHistory()
+{
+    if (m_history.isEmpty())
+        return;
+    m_history.clear();
+    QSettings().remove(QStringLiteral("history"));
+    emit historyChanged();
 }
 
 void CardReader::connectDaemon()
@@ -288,8 +321,8 @@ void CardReader::tryBalanceKeys(int index)
                 keyB ? Podorozhnik::sector4KeyB : Podorozhnik::sector4KeyA,
                 [this, flavor](const QByteArray &block) {
         m_flavor = flavor;
-        m_balanceText = Podorozhnik::formatBalance(
-                Podorozhnik::balanceFromBlock(block));
+        m_balanceKopecks = Podorozhnik::balanceFromBlock(block);
+        m_balanceText = Podorozhnik::formatBalance(m_balanceKopecks);
         qDebug() << "Баланс:" << m_balanceText
                  << "(формат" << (flavor == flavorSt ? "ST" : "NXP") << ")";
         readCardNumber();
@@ -371,6 +404,16 @@ void CardReader::finishOk()
 {
     releaseTag();
     m_errorText.clear();
+
+    const QDateTime now = QDateTime::currentDateTime();
+    m_lastReadTime = now.toString(QStringLiteral("HH:mm"));
+    m_history.prepend(now.toString(QStringLiteral("dd.MM.yyyy HH:mm"))
+                      + QLatin1Char('|') + m_balanceText);
+    while (m_history.size() > 20)
+        m_history.removeLast();
+    QSettings().setValue(QStringLiteral("history"), m_history);
+    emit historyChanged();
+
     setState(Result);
     emit dataChanged();
 }

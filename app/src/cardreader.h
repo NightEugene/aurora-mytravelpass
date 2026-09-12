@@ -24,9 +24,12 @@ class CardReader : public QObject
     Q_PROPERTY(State state READ state NOTIFY stateChanged)
     Q_PROPERTY(bool nfcEnabled READ nfcEnabled NOTIFY nfcEnabledChanged)
     Q_PROPERTY(QString balanceText READ balanceText NOTIFY dataChanged)
+    Q_PROPERTY(quint32 balanceKopecks READ balanceKopecks NOTIFY dataChanged)
+    Q_PROPERTY(QString lastReadTime READ lastReadTime NOTIFY dataChanged)
     Q_PROPERTY(QString cardNumber READ cardNumber NOTIFY dataChanged)
     Q_PROPERTY(QString uidText READ uidText NOTIFY dataChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorChanged)
+    Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
 
 public:
     enum State { Waiting, Reading, Result, Error };
@@ -34,18 +37,27 @@ public:
 
     explicit CardReader(QObject *parent = nullptr);
 
+    // Сбросить результат и прочитать карту заново (кнопка «Обновить»)
+    Q_INVOKABLE void refresh();
+    // Очистить историю чтений (кнопка с корзиной)
+    Q_INVOKABLE void clearHistory();
+
     State state() const { return m_state; }
     bool nfcEnabled() const { return m_nfcEnabled; }
     QString balanceText() const { return m_balanceText; }
+    quint32 balanceKopecks() const { return m_balanceKopecks; }
+    QString lastReadTime() const { return m_lastReadTime; }
     QString cardNumber() const { return m_cardNumber; }
     QString uidText() const { return m_uidText; }
     QString errorText() const { return m_errorText; }
+    QStringList history() const { return m_history; }
 
 signals:
     void stateChanged();
     void nfcEnabledChanged();
     void dataChanged();
     void errorChanged();
+    void historyChanged();
 
 private slots:
     void onServiceRegistered();
@@ -93,7 +105,10 @@ private:
     bool m_nxpEmptySeen = false;
     bool m_nfcEnabled = true;
     QString m_balanceText;
+    quint32 m_balanceKopecks = 0;
+    QString m_lastReadTime;
     QString m_cardNumber;
     QString m_uidText;
     QString m_errorText;
+    QStringList m_history;
 };
