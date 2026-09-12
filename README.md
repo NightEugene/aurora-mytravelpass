@@ -5,6 +5,11 @@
 MIFARE Classic (Crypto1); её поддержка в ОС Аврора ограничена, поэтому
 вторым компонентом проекта ведётся доработка NFC-стека (nfcd).
 
+<p align="center">
+  <img src="screenshots/design-mockup.png" width="270"
+       alt="Дизайн-макет главного экрана" />
+</p>
+
 ## Структура репозитория
 
 - `app/` — приложение для ОС Аврора (Qt5/QML, Silica),
