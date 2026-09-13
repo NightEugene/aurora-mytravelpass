@@ -22,7 +22,17 @@ MIFARE-кадры, поэтому стек идёт в обход него:
   Питание чипа — 64-битный ioctl `0x4008E901`; у драйвера нет
   `.compat_ioctl`, поэтому 32-битные вызовы получают ENOTTY, а nci-init
   собран именно под aarch64. Запускается из systemd drop-in
-  (`ExecStartPre=+...nci-init smoke`) перед nfcd.
+  (`ExecStartPre=+...nci-init smoke`) перед nfcd. Две особенности:
+  - Файлы плагина ставятся APM в `/opt/app` (зашифрованный раздел,
+    монтируется поздно): без ожидания nfcd падает при загрузке с
+    `status=203/EXEC` (nci-init «No such file or directory»). Поэтому
+    drop-in сначала ждёт появления файла циклом (см. установку ниже);
+    `RequiresMountsFor=/opt/app` НЕ помогает (раздел монтируется
+    вне юнитов systemd).
+  - Копировать файлы из `/opt/app` в `/usr/share` нельзя: на устройстве
+    IMA-аппрейсал, неподписанная копия не исполняется («Permission
+    denied», exit 126). Работают только симлинки на подписанные APM
+    файлы.
 - `src/libncicore` (1.1.23 + `patches/libncicore-mifare-proprietary-map.patch`) —
   в discovery-map добавлен `PROPRIETARY/Poll/PROPRIETARY` (0x80/0x80):
   без этого метка активируется как T2T и Crypto1 недоступен.
@@ -69,7 +79,7 @@ mv /usr/lib/nfcd/plugins/binder.so /root/binder.so.bak   # убрать binder-�
 ln -sf /usr/share/nfcd-pn54x-plugin/pn54x.so /usr/lib/nfcd/plugins/pn54x.so
 ln -sf /usr/share/nfcd-pn54x-plugin/libncicore.so.1.1.23 /usr/lib/libncicore.so.1
 mkdir -p /etc/systemd/system/nfcd.service.d
-printf '[Service]\nExecStartPre=+/usr/share/nfcd-pn54x-plugin/nci-init smoke\n' \
+printf '[Service]\nExecStartPre=+/bin/sh -c "for i in $(seq 60); do [ -e /usr/share/nfcd-pn54x-plugin/nci-init ] && break; sleep 1; done; exec /usr/share/nfcd-pn54x-plugin/nci-init smoke"\n' \
     > /etc/systemd/system/nfcd.service.d/pn54x.conf
 systemctl daemon-reload && systemctl restart nfcd
 ```
