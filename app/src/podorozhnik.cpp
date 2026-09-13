@@ -40,16 +40,16 @@ QString cardNumberFromBlock0(const QByteArray &block0)
 
     const QString base = QStringLiteral("96433078")
             + QString::number(leUInt(block0, 0, 7));
+    const QString full = base + luhnCheckDigit(base);
 
-    // Группируем хвост по 4 цифры: «9643 3078 XXXX XXXX …»
-    QString grouped = QStringLiteral("9643 3078 ");
-    const QString tail = base.mid(8);
-    for (int i = 0; i < tail.size(); ++i) {
-        if (i > 0 && (tail.size() - i) % 4 == 0)
+    // Группы по 4 цифры: «9643 3078 XXXX XXXX …» (как formatNumber в metrodroid)
+    QString grouped;
+    for (int i = 0; i < full.size(); ++i) {
+        if (i > 0 && i % 4 == 0)
             grouped += QLatin1Char(' ');
-        grouped += tail.at(i);
+        grouped += full.at(i);
     }
-    return grouped + luhnCheckDigit(base);
+    return grouped;
 }
 
 quint32 balanceFromBlock(const QByteArray &block)

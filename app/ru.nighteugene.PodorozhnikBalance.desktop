@@ -3,8 +3,8 @@ Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=ru.nighteugene.PodorozhnikBalance
 Exec=/usr/bin/ru.nighteugene.PodorozhnikBalance
-Name=Баланс Подорожник
-Name[en]=Podorozhnik Balance
+Name=Подорожник
+Name[en]=Podorozhnik
 
 [X-Application]
 Permissions=NFC

@@ -1,4 +1,4 @@
-# Баланс Подорожник — приложение для ОС Аврора
+# Подорожник — приложение для ОС Аврора
 
 Приложение показывает баланс проездного «Подорожник» (Санкт-Петербург),
 когда карту прикладывают к телефону по NFC. Карта работает по технологии
@@ -6,8 +6,14 @@ MIFARE Classic (Crypto1); её поддержка в ОС Аврора огра�
 вторым компонентом проекта ведётся доработка NFC-стека (nfcd).
 
 <p align="center">
-  <img src="screenshots/design-mockup.png" width="270"
-       alt="Дизайн-макет главного экрана" />
+  <img src="screenshots/app-waiting.png" width="200"
+       alt="Ожидание карты" />
+  <img src="screenshots/app-balance.png" width="200"
+       alt="Баланс и счётчики поездок" />
+  <img src="screenshots/app-history.png" width="200"
+       alt="История чтений" />
+  <img src="screenshots/app-info.png" width="200"
+       alt="Информация о карте" />
 </p>
 
 ## Структура репозитория
@@ -69,13 +75,6 @@ ssh defaultuser@<device> 'sdk-deploy-rpm /tmp/ru.nighteugene.PodorozhnikBalance-
 ```
 
 ## Проверено на устройствах (сентябрь 2026)
-
-**T800 (NXP PN7160, ОС Аврора 5.1.4) — работает.** Приложение читает
-баланс обеих тестовых карт (MIFARE Classic 1K и 4K) со стандартными
-ключами «Подорожника». Так как вендорский HAL отвергает MIFARE-кадры,
-используется обходной путь из `nfcd-mifare-classic/`: nfcd работает через
-pn54x-плагин напрямую с `/dev/nxpnfc`, чип конфигурирует `nci-init`
-(aarch64) из systemd drop-in. См. `nfcd-mifare-classic/README.md`.
 
 **T800 (NXP PN7160, ОС Аврора 5.1.4) — работает.** Приложение читает
 баланс обеих тестовых карт (MIFARE Classic 1K и 4K) со стандартными

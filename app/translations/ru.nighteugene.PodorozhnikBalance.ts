@@ -70,12 +70,6 @@
         <translation>Try holding the card again</translation>
     </message>
     <message>
-        <source>Баланс
-подорожника</source>
-        <translation>Podorozhnik
-balance</translation>
-    </message>
-    <message>
         <source>ОСТАТОК</source>
         <translation>BALANCE</translation>
     </message>
@@ -118,6 +112,14 @@ balance</translation>
     <message>
         <source>Версия</source>
         <translation>Version</translation>
+    </message>
+    <message>
+        <source>Разовая поездка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Пересадки (60 мин)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

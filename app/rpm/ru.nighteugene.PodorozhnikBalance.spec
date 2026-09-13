@@ -1,5 +1,5 @@
 Name:       ru.nighteugene.PodorozhnikBalance
-Summary:    Баланс Подорожник
+Summary:    Подорожник
 Version:    1.1.0
 Release:    1
 Group:      Qt/Qt
@@ -8,6 +8,7 @@ URL:        https://github.com/nighteugene/mifare
 Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
+Requires:   aurora-controls
 Requires:   nfcd
 BuildRequires:  pkgconfig(auroraapp)
 BuildRequires:  pkgconfig(Qt5Core)

@@ -70,11 +70,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Баланс
-подорожника</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>ОСТАТОК</source>
         <translation type="unfinished"></translation>
     </message>
@@ -116,6 +111,14 @@
     </message>
     <message>
         <source>Версия</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Разовая поездка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Пересадки (60 мин)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
