@@ -41,9 +41,10 @@ Page {
     }
 
     function swipeEnd() {
-        if (_swiping)
-            pager.snapToNearest()
+        var wasSwiping = _swiping
         _swiping = false
+        if (wasSwiping)
+            pager.snapToNearest()
     }
 
     onCurrentTabChanged: pager.animateTo(currentTab)
@@ -296,6 +297,16 @@ Page {
                     page.currentTab = idx
             }
 
+            // Вкладка переключается в середине жеста, а не после отпускания
+            onContentXChanged: {
+                if (contentXAnim.running || (!moving && !page._swiping))
+                    return
+                var idx = Math.max(0, Math.min(count - 1,
+                                               Math.round(contentX / width)))
+                if (page.currentTab !== idx)
+                    page.currentTab = idx
+            }
+
             function stopAnim() {
                 contentXAnim.stop()
             }
@@ -303,8 +314,9 @@ Page {
             function animateTo(idx) {
                 idx = Math.max(0, Math.min(count - 1, idx))
                 var target = idx * width
-                // Не дёргаем contentX, если вид уже едет сам или стоит на месте
-                if (moving || Math.abs(contentX - target) < 1)
+                // Не дёргаем contentX, если вид уже едет сам, идёт наш жест
+                // или вид уже стоит на месте
+                if (moving || page._swiping || Math.abs(contentX - target) < 1)
                     return
                 contentXAnim.to = target
                 contentXAnim.restart()
