@@ -66,12 +66,14 @@ docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v "$PWD":/sources -w /sources
 ```
 
 Установка на устройство (не через `rpm -i` — Аврора ставит сторонние пакеты
-только через APM; `sdk-deploy-rpm` — обёртка над ним). Версию пакета при
-каждой итерации поднимайте в `rpm/*.spec` — APM откажется ставить ту же версию:
+только через APM; `sdk-deploy-rpm` — обёртка над ним, `--silent` — без
+подтверждения). Переустановка той же версии при отладке работает; версию в
+`rpm/*.spec` поднимайте для релизов и не забудьте строку версии на вкладке
+ИНФО (`qml/pages/MainPage.qml`):
 
 ```sh
 scp app/RPMS/ru.nighteugene.PodorozhnikBalance-<версия>.aarch64.rpm defaultuser@<device>:/tmp/
-ssh defaultuser@<device> 'sdk-deploy-rpm /tmp/ru.nighteugene.PodorozhnikBalance-<версия>.aarch64.rpm'
+ssh defaultuser@<device> 'sdk-deploy-rpm --silent /tmp/ru.nighteugene.PodorozhnikBalance-<версия>.aarch64.rpm'
 ```
 
 ## Проверено на устройствах (сентябрь 2026)
