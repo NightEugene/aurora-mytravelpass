@@ -190,7 +190,7 @@ void CardReader::readTag(const QString &tagPath)
     m_tagPath = tagPath;
     m_uid.clear();
     m_errorText.clear();
-    m_nxpEmptySeen = false;
+    m_nxpRejectedSeen = false;
     setState(Reading);
 
     QDBusConnection::systemBus().connect(nfcService, tagPath, tagIface,
@@ -228,25 +228,12 @@ void CardReader::readTag(const QString &tagPath)
 
 void CardReader::acquireTag(std::function<void()> next)
 {
-    // Эксклюзивный доступ, чтобы системные проверки метки не вклинились
-    // в последовательность команд (на Classic-метках nfcd периодически
-    // сбрасывает метку, что рвёт обмен). В документации ОС Аврора —
-    // Acquire(bool), в апстриме nfcd — Acquire() без аргументов.
-    asyncCall(m_tagPath, tagIface, QStringLiteral("Acquire"), { false },
-              [this, next](const QList<QVariant> &, const QString &error) {
-        if (error.isEmpty()) {
-            qDebug("Acquire(false): ok");
-            next();
-            return;
-        }
-        qDebug() << "Acquire(false):" << error;
-        asyncCall(m_tagPath, tagIface, QStringLiteral("Acquire"), {},
-                  [next](const QList<QVariant> &, const QString &error2) {
-            qDebug() << "Acquire():" << (error2.isEmpty()
-                     ? QStringLiteral("ok") : error2);
-            next();
-        });
-    });
+    // Tag.Acquire НЕ используем: на binder-HAL (MediaTek, TrustPhone T1)
+    // Acquire(false) выполняется «успешно», но ломает весь последующий
+    // обмен с меткой (Transmission failed на любой кадр). Без эксклюзивного
+    // доступа системный Classic reset может вклиниться в обмен — такие
+    // сбои переживаются ретраями (retryDelayMs в tryBalanceKeys).
+    next();
 }
 
 void CardReader::releaseTag()
@@ -298,37 +285,51 @@ void CardReader::tryBalanceKeys(int index)
 
     // Комбинации (формат кадра × ключ). Пока формат стека не определён,
     // перебираем оба; после первого успеха используется только он.
-    // ST-кадры посылаются только если NXP-стек ответил на auth ПУСТЫМ
-    // ответом (признак ST: настоящий NXP-чип всегда отвечает {0x40}/{0xC0}
-    // либо ошибкой) — сырые ST-кадры вешают прошивку PN7160
+    // ST-кадры посылаются только если NXP-auth был ОТВЕРГНУТ стеком —
+    // пустым ответом (ST21NFC) или D-Bus-ошибкой (binder-HAL MediaTek).
+    // Настоящий NXP-чип с картой «Подорожник» на auth отвечает {0x40},
+    // поэтому до ST-кадров дело не доходит — они вешают прошивку PN7160
     // (EIO на /dev/nxpnfc, NFC отваливается до перезапуска nfcd).
-    QList<QPair<int, bool> > combos;
-    if (m_flavor >= 0) {
-        combos << qMakePair(m_flavor, false) << qMakePair(m_flavor, true);
+    // Остаточный риск: чужая MIFARE-карта на NXP-чипе — оба наших ключа
+    // не подойдут, гейт откроется и ST-кадр уйдёт в PN7160.
+    // Структура комбинации: формат, ключ B, UID в ST-кадре — первые 4 байта.
+    struct Combo { int flavor; bool keyB; bool uidLeft; };
+    QList<Combo> combos;
+    if (m_flavor == flavorNxp) {
+        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
+    } else if (m_flavor == flavorSt) {
+        combos << Combo{flavorSt, false, m_uidLeft} << Combo{flavorSt, true, m_uidLeft};
     } else {
-        combos << qMakePair(flavorNxp, false) << qMakePair(flavorNxp, true);
-        if (m_nxpEmptySeen)
-            combos << qMakePair(flavorSt, false) << qMakePair(flavorSt, true);
+        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
+        if (m_nxpRejectedSeen) {
+            // Варианты UID в ST-auth разнятся по стекам: ST21NFC ждёт
+            // ПОСЛЕДНИЕ 4 байта UID, binder-HAL MediaTek — первые 4
+            // (как AOSP rw_mfc.c). Перебираем оба.
+            combos << Combo{flavorSt, false, false} << Combo{flavorSt, false, true}
+                   << Combo{flavorSt, true, false} << Combo{flavorSt, true, true};
+        }
     }
     if (index >= combos.size()) {
         fail(tr("Не удалось авторизовать сектор баланса: ключ не подошёл"));
         return;
     }
 
-    const int flavor = combos.at(index).first;
-    const bool keyB = combos.at(index).second;
-    authAndRead(flavor, keyB, blockBalance,
+    const int flavor = combos.at(index).flavor;
+    const bool keyB = combos.at(index).keyB;
+    const bool uidLeft = combos.at(index).uidLeft;
+    authAndRead(flavor, keyB, uidLeft, blockBalance,
                 keyB ? Podorozhnik::sector4KeyB : Podorozhnik::sector4KeyA,
-                [this, flavor](const QByteArray &block) {
+                [this, flavor, uidLeft](const QByteArray &block) {
         m_flavor = flavor;
+        m_uidLeft = uidLeft;
         m_balanceKopecks = Podorozhnik::balanceFromBlock(block);
         m_balanceText = Podorozhnik::formatBalance(m_balanceKopecks);
         qDebug() << "Баланс:" << m_balanceText
                  << "(формат" << (flavor == flavorSt ? "ST" : "NXP") << ")";
         readCardNumber();
-    }, [this, index](bool emptyReply) {
-        if (emptyReply)
-            m_nxpEmptySeen = true;
+    }, [this, index](bool nxpRejected) {
+        if (nxpRejected)
+            m_nxpRejectedSeen = true;
         // На ST-стеке неудачный auth ломает сессию до реактивации метки —
         // пережидаем цикл Classic reset; на NXP пауза безвредна.
         QTimer::singleShot(retryDelayMs, this, [this, index] {
@@ -339,8 +340,10 @@ void CardReader::tryBalanceKeys(int index)
 
 // Авторизует сектор блока и читает сам блок. ok получает данные блока
 // (16 байт на NXP, 15 на ST — последний байт стек ST срезает).
-// err(true) сигнализирует о пустом ответе на NXP-auth (см. tryBalanceKeys).
-void CardReader::authAndRead(int flavor, bool keyB, char block, const QByteArray &key,
+// err(true) сигнализирует, что NXP-auth отвергнут стеком — пустым ответом,
+// мусором или D-Bus-ошибкой (см. tryBalanceKeys).
+void CardReader::authAndRead(int flavor, bool keyB, bool uidLeft, char block,
+                             const QByteArray &key,
                              std::function<void(const QByteArray &)> ok,
                              std::function<void(bool)> err)
 {
@@ -352,14 +355,15 @@ void CardReader::authAndRead(int flavor, bool keyB, char block, const QByteArray
     } else {
         auth.append(keyB ? stCmdAuthB : stCmdAuthA);
         auth.append(block);           // у ST адрес = номер БЛОКА
-        auth.append(m_uid.right(4));
+        // 4 байта UID: ST21NFC ждёт последние, binder-HAL MediaTek — первые
+        auth.append(uidLeft ? m_uid.left(4) : m_uid.right(4));
     }
     auth.append(key);
 
     transceive(auth, [this, flavor, block, ok, err](const QByteArray &resp) {
         if (flavor == flavorNxp &&
                 (resp.isEmpty() || quint8(resp.at(0)) != quint8(mfcCmdAuth))) {
-            err(resp.isEmpty());
+            err(true);
             return;
         }
         // У ST успешный auth — пустой ответ; что auth действительно прошёл,
@@ -383,15 +387,17 @@ void CardReader::authAndRead(int flavor, bool keyB, char block, const QByteArray
         }, [err](const QString &) {
             err(false);
         });
-    }, [err](const QString &) {
-        err(false);
+    }, [flavor, err](const QString &) {
+        // D-Bus-ошибка на NXP-auth (binder-HAL MediaTek) — тоже признак
+        // не-NXP стека, открываем гейт ST-кадрам
+        err(flavor == flavorNxp);
     });
 }
 
 void CardReader::readCardNumber()
 {
     // Номер карты — необязательные данные: любая ошибка здесь не фатальна
-    authAndRead(m_flavor, false, blockNumber, Podorozhnik::keyDefault,
+    authAndRead(m_flavor, false, m_uidLeft, blockNumber, Podorozhnik::keyDefault,
                 [this](const QByteArray &block) {
         m_cardNumber = Podorozhnik::cardNumberFromBlock0(block);
         finishOk();

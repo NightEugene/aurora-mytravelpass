@@ -88,11 +88,13 @@ private:
     void tryBalanceKeys(int index);
     // Авторизует сектор блока flavor-форматом и читает блок;
     // ok получает данные блока (16 байт NXP / 15 байт ST).
-    // err(true) = NXP-стек вернул ПУСТОЙ ответ на auth (признак ST-стека);
-    // err(false) = любая другая ошибка.
-    void authAndRead(int flavor, bool keyB, char block, const QByteArray &key,
+    // uidLeft: в ST-auth — первые 4 байта UID (binder-HAL MediaTek)
+    // или последние (ST21NFC). err(true) = NXP-auth отвергнут стеком
+    // (пустой ответ, мусор или D-Bus-ошибка); err(false) = прочее.
+    void authAndRead(int flavor, bool keyB, bool uidLeft, char block,
+                     const QByteArray &key,
                      std::function<void(const QByteArray &)> ok,
-                     std::function<void(bool emptyReply)> err);
+                     std::function<void(bool nxpRejected)> err);
     void readCardNumber();
 
     QString m_adapterPath;
@@ -100,9 +102,11 @@ private:
     QByteArray m_uid;
     State m_state = Waiting;
     int m_flavor = -1; // формат кадров: flavorNxp/flavorSt, -1 = не определён
-    // ST-пробы разрешены только после пустого ответа на NXP-кадр: сырые
-    // ST-кадры вешают прошивку NXP-чипа (EIO на /dev/nxpnfc, PN7160)
-    bool m_nxpEmptySeen = false;
+    // ST-пробы разрешены только после отвергнутого NXP-auth (пустой ответ
+    // или D-Bus-ошибка): сырые ST-кадры вешают прошивку NXP-чипа
+    // (EIO на /dev/nxpnfc, PN7160)
+    bool m_nxpRejectedSeen = false;
+    bool m_uidLeft = false; // в ST-auth: первые 4 байта UID (иначе последние)
     bool m_nfcEnabled = true;
     QString m_balanceText;
     quint32 m_balanceKopecks = 0;
