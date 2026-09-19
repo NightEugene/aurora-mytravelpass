@@ -1,10 +1,15 @@
 #include "podorozhnik.h"
 
+#include <QDateTime>
+#include <QLocale>
+
 namespace Podorozhnik {
 
 const QByteArray keyDefault  = QByteArray::fromHex("FFFFFFFFFFFF");
 const QByteArray sector4KeyA = QByteArray::fromHex("E56AC127DD45");
 const QByteArray sector4KeyB = QByteArray::fromHex("19FC84A3784B");
+const QByteArray sector5KeyA = QByteArray::fromHex("77DABC9825E1");
+const QByteArray sector5KeyB = QByteArray::fromHex("9764FEC3154A");
 
 // Все многобайтовые целые на карте — little-endian (metrodroid byteArrayToIntReversed)
 static quint64 leUInt(const QByteArray &data, int offset, int size)
@@ -55,6 +60,74 @@ QString cardNumberFromBlock0(const QByteArray &block0)
 quint32 balanceFromBlock(const QByteArray &block)
 {
     return block.size() < 4 ? 0 : quint32(leUInt(block, 0, 4));
+}
+
+QString minutesToDateTimeText(quint32 minutes)
+{
+    const QDateTime epoch(QDate(2010, 1, 1), QTime(0, 0), Qt::OffsetFromUTC, 3 * 3600);
+    return epoch.addSecs(qint64(minutes) * 60).toString(QStringLiteral("dd.MM.yyyy HH:mm"));
+}
+
+TripInfo tripFromBlock(const QByteArray &block)
+{
+    TripInfo trip;
+    if (block.size() < 10)
+        return trip;
+    trip.timeMinutes = quint32(leUInt(block, 0, 3));
+    trip.transport = quint8(block.at(3));
+    trip.validator = quint16(leUInt(block, 4, 2));
+    trip.fareKopecks = quint32(leUInt(block, 6, 4));
+    trip.valid = trip.timeMinutes != 0;
+    return trip;
+}
+
+QString transportName(quint8 transport, quint16 validator)
+{
+    switch (transport) {
+    case 1: // метро; validator == 0 — криво настроенный валидатор наземного
+        return validator == 0 ? QStringLiteral("Наземный транспорт")
+                              : QStringLiteral("Метро");
+    case 3: // автобус с переносным валидатором
+    case 4: // автобус со стационарным валидатором
+        return QStringLiteral("Наземный транспорт");
+    case 7:
+        return QStringLiteral("Маршрутное такси");
+    default:
+        return QStringLiteral("Транспорт %1").arg(transport);
+    }
+}
+
+TopupInfo topupFromBlock(const QByteArray &block)
+{
+    TopupInfo topup;
+    if (block.size() < 11)
+        return topup;
+    topup.timeMinutes = quint32(leUInt(block, 2, 3));
+    topup.amountKopecks = quint32(leUInt(block, 8, 3));
+    topup.valid = topup.timeMinutes != 0;
+    return topup;
+}
+
+bool countersFromBlocks(const QByteArray &block1, const QByteArray &block2,
+                        int &subway, int &ground, quint32 &tsMinutes)
+{
+    if (block1.size() < 5 || block2.size() < 5)
+        return false;
+    const QByteArray &fresh = leUInt(block2, 2, 3) > leUInt(block1, 2, 3)
+            ? block2 : block1;
+    subway = quint8(fresh.at(0));
+    ground = quint8(fresh.at(1));
+    tsMinutes = quint32(leUInt(fresh, 2, 3));
+    return true;
+}
+
+QString monthYearText(quint32 minutes)
+{
+    const QDateTime epoch(QDate(2010, 1, 1), QTime(0, 0), Qt::OffsetFromUTC, 3 * 3600);
+    const QDate date = epoch.addSecs(qint64(minutes) * 60).date();
+    const QLocale ru(QLocale::Russian, QLocale::Russia);
+    return ru.standaloneMonthName(date.month(), QLocale::LongFormat)
+            + QLatin1Char(' ') + QString::number(date.year());
 }
 
 QString formatBalance(quint32 kopecks)

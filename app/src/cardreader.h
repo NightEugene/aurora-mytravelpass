@@ -28,6 +28,15 @@ class CardReader : public QObject
     Q_PROPERTY(QString lastReadTime READ lastReadTime NOTIFY dataChanged)
     Q_PROPERTY(QString cardNumber READ cardNumber NOTIFY dataChanged)
     Q_PROPERTY(QString uidText READ uidText NOTIFY dataChanged)
+    Q_PROPERTY(QString lastTripWhen READ lastTripWhen NOTIFY dataChanged)
+    Q_PROPERTY(QString lastTripFare READ lastTripFare NOTIFY dataChanged)
+    Q_PROPERTY(QString lastTripTransport READ lastTripTransport NOTIFY dataChanged)
+    Q_PROPERTY(bool lastTripIsMetro READ lastTripIsMetro NOTIFY dataChanged)
+    Q_PROPERTY(QString lastTopupWhen READ lastTopupWhen NOTIFY dataChanged)
+    Q_PROPERTY(QString lastTopupAmount READ lastTopupAmount NOTIFY dataChanged)
+    Q_PROPERTY(int subwayTrips READ subwayTrips NOTIFY dataChanged)
+    Q_PROPERTY(int groundTrips READ groundTrips NOTIFY dataChanged)
+    Q_PROPERTY(QString tripsPeriod READ tripsPeriod NOTIFY dataChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorChanged)
     Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
 
@@ -49,6 +58,15 @@ public:
     QString lastReadTime() const { return m_lastReadTime; }
     QString cardNumber() const { return m_cardNumber; }
     QString uidText() const { return m_uidText; }
+    QString lastTripWhen() const { return m_lastTripWhen; }
+    QString lastTripFare() const { return m_lastTripFare; }
+    QString lastTripTransport() const { return m_lastTripTransport; }
+    bool lastTripIsMetro() const { return m_lastTripIsMetro; }
+    QString lastTopupWhen() const { return m_lastTopupWhen; }
+    QString lastTopupAmount() const { return m_lastTopupAmount; }
+    int subwayTrips() const { return m_subwayTrips; }
+    int groundTrips() const { return m_groundTrips; }
+    QString tripsPeriod() const { return m_tripsPeriod; }
     QString errorText() const { return m_errorText; }
     QStringList history() const { return m_history; }
 
@@ -96,6 +114,12 @@ private:
                      std::function<void(const QByteArray &)> ok,
                      std::function<void(bool nxpRejected)> err);
     void readCardNumber();
+    // Дальнейшие блоки читаются цепочкой после номера карты; любая ошибка
+    // здесь не фатальна — обрываем цепочку и показываем, что есть
+    void readTopup();
+    void readTripBlocks(int step, bool keyB, const QByteArray &tripBlock = QByteArray(),
+                        const QByteArray &counterBlock1 = QByteArray(),
+                        const QByteArray &counterBlock2 = QByteArray());
 
     QString m_adapterPath;
     QString m_tagPath;
@@ -113,6 +137,15 @@ private:
     QString m_lastReadTime;
     QString m_cardNumber;
     QString m_uidText;
+    QString m_lastTripWhen;
+    QString m_lastTripFare;
+    QString m_lastTripTransport;
+    bool m_lastTripIsMetro = false;
+    QString m_lastTopupWhen;
+    QString m_lastTopupAmount;
+    int m_subwayTrips = 0;
+    int m_groundTrips = 0;
+    QString m_tripsPeriod;
     QString m_errorText;
     QStringList m_history;
 };

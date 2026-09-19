@@ -449,6 +449,103 @@ Page {
                                     font.pixelSize: Theme.fontSizeMedium
                                 }
                             }
+
+                            // Последняя поездка
+                            Rectangle {
+                                width: parent.width
+                                height: Theme.itemSizeSmall
+                                radius: Theme.paddingMedium
+                                color: page.plateColor
+                                visible: cardReader.state === CardReader.Result
+                                         && cardReader.lastTripWhen.length > 0
+
+                                Image {
+                                    x: Theme.paddingMedium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: cardReader.lastTripIsMetro
+                                            ? "image://theme/icon-m-train"
+                                            : "image://theme/icon-m-car"
+                                }
+
+                                Column {
+                                    anchors {
+                                        left: parent.left
+                                        leftMargin: Theme.paddingMedium
+                                            + Theme.iconSizeMedium + Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+
+                                    Label {
+                                        text: qsTr("Последняя поездка")
+                                        color: Theme.primaryColor
+                                        font.pixelSize: Theme.fontSizeSmall
+                                    }
+                                    Label {
+                                        text: cardReader.lastTripTransport
+                                              + " · " + cardReader.lastTripWhen
+                                        color: Theme.secondaryColor
+                                        font.pixelSize: Theme.fontSizeExtraSmall
+                                    }
+                                }
+
+                                Label {
+                                    anchors {
+                                        right: parent.right
+                                        rightMargin: Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                    text: cardReader.lastTripFare
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeMedium
+                                }
+                            }
+
+                            // Последнее пополнение
+                            Rectangle {
+                                width: parent.width
+                                height: Theme.itemSizeSmall
+                                radius: Theme.paddingMedium
+                                color: page.plateColor
+                                visible: cardReader.state === CardReader.Result
+                                         && cardReader.lastTopupWhen.length > 0
+
+                                Image {
+                                    x: Theme.paddingMedium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: "image://theme/icon-m-add"
+                                }
+
+                                Column {
+                                    anchors {
+                                        left: parent.left
+                                        leftMargin: Theme.paddingMedium
+                                            + Theme.iconSizeMedium + Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+
+                                    Label {
+                                        text: qsTr("Последнее пополнение")
+                                        color: Theme.primaryColor
+                                        font.pixelSize: Theme.fontSizeSmall
+                                    }
+                                    Label {
+                                        text: cardReader.lastTopupWhen
+                                        color: Theme.secondaryColor
+                                        font.pixelSize: Theme.fontSizeExtraSmall
+                                    }
+                                }
+
+                                Label {
+                                    anchors {
+                                        right: parent.right
+                                        rightMargin: Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                    text: cardReader.lastTopupAmount
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeMedium
+                                }
+                            }
                         }
 
                         // ИЗМЕНЕНИЯ: история чтений
@@ -513,9 +610,15 @@ Page {
                                     [qsTr("Номер карты"), cardReader.cardNumber],
                                     [qsTr("UID карты"), cardReader.uidText],
                                     [qsTr("Время чтения"), cardReader.lastReadTime],
+                                    [cardReader.tripsPeriod.length > 0
+                                        ? qsTr("Поездок на метро (%1)").arg(cardReader.tripsPeriod)
+                                        : qsTr("Поездок на метро"), String(cardReader.subwayTrips)],
+                                    [cardReader.tripsPeriod.length > 0
+                                        ? qsTr("Поездок на наземном (%1)").arg(cardReader.tripsPeriod)
+                                        : qsTr("Поездок на наземном"), String(cardReader.groundTrips)],
                                     [qsTr("Разовая поездка"), "65 ₽"],
                                     [qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"],
-                                    [qsTr("Версия"), "1.2.0"]
+                                    [qsTr("Версия"), "1.3.0"]
                                 ]
 
                                 Rectangle {

@@ -62,8 +62,12 @@ const int retryDelayMs = 1100;
 
 // Абсолютные номера блоков (MIFARE Classic 1K: 4 блока на сектор;
 // у NXP-формата адрес в auth — сектор = блок/4)
-const char blockBalance  = 16;
-const char blockNumber   = 0;
+const char blockBalance   = 16;
+const char blockNumber    = 0;
+const char blockTopup     = 18; // сектор 4, блок 2 — последнее пополнение
+const char blockTrip      = 20; // сектор 5, блок 0 — последняя поездка
+const char blockCounters1 = 21; // сектор 5, блоки 1-2 — счётчики поездок
+const char blockCounters2 = 22;
 
 } // namespace
 
@@ -97,6 +101,15 @@ void CardReader::refresh()
     m_lastReadTime.clear();
     m_cardNumber.clear();
     m_uidText.clear();
+    m_lastTripWhen.clear();
+    m_lastTripFare.clear();
+    m_lastTripTransport.clear();
+    m_lastTripIsMetro = false;
+    m_lastTopupWhen.clear();
+    m_lastTopupAmount.clear();
+    m_subwayTrips = 0;
+    m_groundTrips = 0;
+    m_tripsPeriod.clear();
     m_errorText.clear();
     setState(Waiting);
     emit dataChanged();
@@ -191,6 +204,16 @@ void CardReader::readTag(const QString &tagPath)
     m_uid.clear();
     m_errorText.clear();
     m_nxpRejectedSeen = false;
+    // Данные прошлой карты не должны попасть в новый результат
+    m_lastTripWhen.clear();
+    m_lastTripFare.clear();
+    m_lastTripTransport.clear();
+    m_lastTripIsMetro = false;
+    m_lastTopupWhen.clear();
+    m_lastTopupAmount.clear();
+    m_subwayTrips = 0;
+    m_groundTrips = 0;
+    m_tripsPeriod.clear();
     setState(Reading);
 
     QDBusConnection::systemBus().connect(nfcService, tagPath, tagIface,
@@ -400,9 +423,78 @@ void CardReader::readCardNumber()
     authAndRead(m_flavor, false, m_uidLeft, blockNumber, Podorozhnik::keyDefault,
                 [this](const QByteArray &block) {
         m_cardNumber = Podorozhnik::cardNumberFromBlock0(block);
-        finishOk();
+        readTopup();
     }, [this](bool) {
+        readTopup();
+    });
+}
+
+void CardReader::readTopup()
+{
+    // Последнее пополнение: сектор 4, блок 2 (та же авторизация, что баланс)
+    authAndRead(m_flavor, false, m_uidLeft, blockTopup, Podorozhnik::sector4KeyA,
+                [this](const QByteArray &block) {
+        const Podorozhnik::TopupInfo topup = Podorozhnik::topupFromBlock(block);
+        if (topup.valid) {
+            m_lastTopupWhen = Podorozhnik::minutesToDateTimeText(topup.timeMinutes);
+            m_lastTopupAmount = Podorozhnik::formatBalance(topup.amountKopecks);
+        }
+        readTripBlocks(0, false);
+    }, [this](bool) {
+        readTripBlocks(0, false);
+    });
+}
+
+void CardReader::readTripBlocks(int step, bool keyB, const QByteArray &tripBlock,
+                                const QByteArray &counterBlock1,
+                                const QByteArray &counterBlock2)
+{
+    // Сектор 5: блок 0 — последняя поездка, блоки 1 и 2 — счётчики
+    // (дублируют друг друга, берём более свежий)
+    static const char blocks[] = { blockTrip, blockCounters1, blockCounters2 };
+    if (step >= 3) {
+        if (!tripBlock.isEmpty()) {
+            const Podorozhnik::TripInfo trip = Podorozhnik::tripFromBlock(tripBlock);
+            if (trip.valid) {
+                m_lastTripWhen = Podorozhnik::minutesToDateTimeText(trip.timeMinutes);
+                m_lastTripFare = Podorozhnik::formatBalance(trip.fareKopecks);
+                m_lastTripTransport = Podorozhnik::transportName(trip.transport,
+                                                                 trip.validator);
+                m_lastTripIsMetro = trip.transport == 1 && trip.validator != 0;
+            }
+        }
+        if (!counterBlock1.isEmpty() && !counterBlock2.isEmpty()) {
+            quint32 countersTs = 0;
+            if (Podorozhnik::countersFromBlocks(counterBlock1, counterBlock2,
+                                                m_subwayTrips, m_groundTrips,
+                                                countersTs))
+                m_tripsPeriod = Podorozhnik::monthYearText(countersTs);
+        }
         finishOk();
+        return;
+    }
+
+    authAndRead(m_flavor, keyB, m_uidLeft, blocks[step],
+                keyB ? Podorozhnik::sector5KeyB : Podorozhnik::sector5KeyA,
+                [this, step, keyB, tripBlock, counterBlock1](const QByteArray &block) {
+        if (step == 0)
+            readTripBlocks(1, keyB, block, counterBlock1);
+        else if (step == 1)
+            readTripBlocks(2, keyB, tripBlock, block);
+        else
+            readTripBlocks(3, keyB, tripBlock, counterBlock1, block);
+    }, [this, step, keyB, tripBlock, counterBlock1, counterBlock2](bool) {
+        if (step == 0 && !keyB) {
+            // Ключ A сектора 5 не подошёл — пробуем запасной B
+            readTripBlocks(0, true, tripBlock, counterBlock1, counterBlock2);
+            return;
+        }
+        // Пауза на цикл Classic reset и дальше (неудача не фатальна)
+        QTimer::singleShot(retryDelayMs, this,
+                           [this, step, keyB, tripBlock, counterBlock1, counterBlock2] {
+            if (m_state == Reading)
+                readTripBlocks(step + 1, keyB, tripBlock, counterBlock1, counterBlock2);
+        });
     });
 }
 

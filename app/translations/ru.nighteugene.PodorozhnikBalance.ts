@@ -121,5 +121,29 @@
         <source>Пересадки (60 мин)</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Последняя поездка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Последнее пополнение</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездок на метро</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездок на наземном</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездок на метро (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездок на наземном (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>
