@@ -103,6 +103,9 @@ NXP-формат auth отвергается D-Bus-ошибкой (не пуст
 а `Tag.Acquire` ломает последующий обмен — поэтому приложение его не
 использует.
 
+**Aquarius AQ_NSM21 (binder-HAL, Аврора 5.2.1) — работает** на стоковом
+nfcd, тот же binder-путь, что и у T1.
+
 Итог: для чтения «Подорожника» нужен NFC-контроллер с Crypto1 — NXP
 (PN54x/PN71xx/SN1xx/SN2xx, плюс компонент `nfcd-mifare-classic`),
 STMicroelectronics поколения ST21NFCD/ST54 (стоковый стек) либо
