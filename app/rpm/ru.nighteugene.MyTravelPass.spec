@@ -1,6 +1,6 @@
 Name:       ru.nighteugene.MyTravelPass
 Summary:    Мой проездной
-Version:    1.3.2
+Version:    1.4.0
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
@@ -22,7 +22,7 @@ BuildRequires:  pkgconfig(Qt5Quick)
 при поднесении транспортной карты к телефону. Карта читается по NFC
 как MIFARE Classic через D-Bus API nfcd.
 
-Пока поддерживается только карта «Подорожник» (Санкт-Петербург).
+Поддерживаются карты «Подорожник» (Санкт-Петербург) и «Тройка» (Москва).
 
 %prep
 %autosetup

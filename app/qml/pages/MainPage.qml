@@ -63,7 +63,8 @@ Page {
         id: appBar
         // После успешного чтения показываем тип распознанной карты
         headerText: cardReader.state === CardReader.Result
-                    ? qsTr("Подорожник") : qsTr("Мой проездной")
+                    && cardReader.cardTypeName.length > 0
+                    ? cardReader.cardTypeName : qsTr("Мой проездной")
 
         AppBarSpacer {}
 
@@ -99,7 +100,8 @@ Page {
             onCanceled: page.swipeEnd()
         }
 
-        // Плашка: баланс и время чтения
+        // Плашка: баланс и время чтения. Цвет — по типу карты:
+        // зелёный «Подорожник», бирюзовый «Тройка»
         Rectangle {
             id: plate
             anchors {
@@ -111,8 +113,16 @@ Page {
             height: Math.round(width * 0.5)
             radius: Theme.paddingMedium
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#7CB342" }
-                GradientStop { position: 1.0; color: "#558B2F" }
+                GradientStop {
+                    position: 0.0
+                    color: cardReader.cardKind === CardReader.KindTroika
+                           ? "#4DD0E1" : "#7CB342"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: cardReader.cardKind === CardReader.KindTroika
+                           ? "#0097A7" : "#558B2F"
+                }
             }
 
             Column {
@@ -366,7 +376,9 @@ Page {
                                 height: Theme.itemSizeSmall
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
+                                // Тариф и счётчик поездок — СПб, для Тройки скрываем
                                 visible: cardReader.state === CardReader.Result
+                                         && cardReader.cardKind === CardReader.KindPodorozhnik
 
                                 // Знак рубля вместо иконки (в теме его нет)
                                 Label {
@@ -423,6 +435,7 @@ Page {
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
                                 visible: cardReader.state === CardReader.Result
+                                         && cardReader.cardKind === CardReader.KindPodorozhnik
 
                                 // Автобус (своей иконкой, в теме её нет) + метро
                                 Row {
@@ -495,6 +508,7 @@ Page {
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
                                 visible: cardReader.state === CardReader.Result
+                                         && cardReader.cardKind === CardReader.KindPodorozhnik
 
                                 Image {
                                     x: Theme.paddingMedium
@@ -588,8 +602,12 @@ Page {
                                     Label {
                                         width: parent.width
                                         elide: Text.ElideRight
-                                        text: cardReader.lastTripTransport
-                                              + " · " + cardReader.lastTripWhen
+                                        // У «Тройки» вид транспорта может быть
+                                        // неизвестен — без висячего разделителя
+                                        text: cardReader.lastTripTransport.length > 0
+                                              ? cardReader.lastTripTransport
+                                                + " · " + cardReader.lastTripWhen
+                                              : cardReader.lastTripWhen
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
                                     }
@@ -685,13 +703,20 @@ Page {
                                     radius: Theme.paddingSmall
                                     color: page.plateColor
 
+                                    // «дата|баланс|тип»; у записей до 1.3.2
+                                    // типа нет — показываем только дату
+                                    property var parts: modelData.split("|")
+
                                     Label {
                                         anchors {
                                             left: parent.left
                                             leftMargin: Theme.paddingMedium
                                             verticalCenter: parent.verticalCenter
                                         }
-                                        text: modelData.split("|")[0]
+                                        text: parent.parts.length > 2
+                                              && parent.parts[2].length > 0
+                                              ? parent.parts[2] + " · " + parent.parts[0]
+                                              : parent.parts[0]
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
@@ -702,7 +727,7 @@ Page {
                                             rightMargin: Theme.paddingMedium
                                             verticalCenter: parent.verticalCenter
                                         }
-                                        text: modelData.split("|")[1]
+                                        text: parent.parts[1]
                                         color: Theme.primaryColor
                                         font.pixelSize: Theme.fontSizeSmall
                                         font.bold: true
@@ -719,20 +744,29 @@ Page {
                             visible: index === 2
 
                             Repeater {
-                                model: [
-                                    [qsTr("Номер карты"), cardReader.cardNumber],
-                                    [qsTr("UID карты"), cardReader.uidText],
-                                    [qsTr("Время чтения"), cardReader.lastReadTime],
-                                    [cardReader.tripsPeriod.length > 0
-                                        ? qsTr("Поездок на метро (%1)").arg(cardReader.tripsPeriod)
-                                        : qsTr("Поездок на метро"), String(cardReader.subwayTrips)],
-                                    [cardReader.tripsPeriod.length > 0
-                                        ? qsTr("Поездок на наземном (%1)").arg(cardReader.tripsPeriod)
-                                        : qsTr("Поездок на наземном"), String(cardReader.groundTrips)],
-                                    [qsTr("Разовая поездка"), "65 ₽"],
-                                    [qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"],
-                                    [qsTr("Версия"), "1.3.2"]
-                                ]
+                                // Счётчики поездок и тарифы — специфичны для
+                                // «Подорожника»; для «Тройки» не показываем
+                                model: {
+                                    var rows = [
+                                        [qsTr("Номер карты"), cardReader.cardNumber],
+                                        [qsTr("UID карты"), cardReader.uidText],
+                                        [qsTr("Время чтения"), cardReader.lastReadTime]
+                                    ]
+                                    if (cardReader.cardKind === CardReader.KindPodorozhnik) {
+                                        rows.push([cardReader.tripsPeriod.length > 0
+                                                   ? qsTr("Поездок на метро (%1)").arg(cardReader.tripsPeriod)
+                                                   : qsTr("Поездок на метро"),
+                                                   String(cardReader.subwayTrips)])
+                                        rows.push([cardReader.tripsPeriod.length > 0
+                                                   ? qsTr("Поездок на наземном (%1)").arg(cardReader.tripsPeriod)
+                                                   : qsTr("Поездок на наземном"),
+                                                   String(cardReader.groundTrips)])
+                                        rows.push([qsTr("Разовая поездка"), "65 ₽"])
+                                        rows.push([qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"])
+                                    }
+                                    rows.push([qsTr("Версия"), "1.4.0"])
+                                    return rows
+                                }
 
                                 Rectangle {
                                     width: parent.width

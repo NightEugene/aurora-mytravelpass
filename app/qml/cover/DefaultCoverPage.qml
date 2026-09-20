@@ -9,6 +9,14 @@ CoverBackground {
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: cardReader.state === CardReader.Result
+            font.pixelSize: Theme.fontSizeExtraSmall
+            color: Theme.secondaryColor
+            text: cardReader.cardTypeName
+        }
+
+        Label {
+            anchors.horizontalCenter: parent.horizontalCenter
             font.pixelSize: cardReader.state === CardReader.Result
                             ? Theme.fontSizeLarge : Theme.fontSizeMedium
             color: Theme.highlightColor

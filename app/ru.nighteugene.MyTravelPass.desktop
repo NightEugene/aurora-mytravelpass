@@ -5,8 +5,8 @@ Icon=ru.nighteugene.MyTravelPass
 Exec=/usr/bin/ru.nighteugene.MyTravelPass
 Name=Мой проездной
 Name[en]=My Travel Pass
-Comment=Баланс и данные проездных карт по NFC (пока поддерживается только «Подорожник»)
-Comment[en]=Transit card balance over NFC (only Podorozhnik card is supported so far)
+Comment=Баланс и данные проездных карт по NFC («Подорожник», «Тройка»)
+Comment[en]=Transit card balance over NFC (Podorozhnik, Troika)
 
 [X-Application]
 Permissions=NFC

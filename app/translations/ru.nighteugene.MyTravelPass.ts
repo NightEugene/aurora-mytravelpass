@@ -16,16 +16,24 @@
         <translation>Failed to get card UID: %1</translation>
     </message>
     <message>
-        <source>Не удалось авторизовать сектор баланса: ключ не подошёл</source>
-        <translation>Failed to authenticate the balance sector: key did not match</translation>
-    </message>
-    <message>
         <source>метка отключена</source>
         <translation>tag disconnected</translation>
     </message>
     <message>
         <source>Карта убрана слишком рано — держите её у телефона до конца чтения</source>
         <translation>The card was removed too early — keep it near the phone until reading completes</translation>
+    </message>
+    <message>
+        <source>Подорожник</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Тройка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Карта не опознана: поддерживаются «Подорожник» и «Тройка»</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -155,10 +163,6 @@
     </message>
     <message>
         <source>Мой проездной</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Подорожник</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

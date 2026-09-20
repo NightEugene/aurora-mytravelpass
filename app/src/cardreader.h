@@ -22,6 +22,8 @@ class CardReader : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(State state READ state NOTIFY stateChanged)
+    Q_PROPERTY(Kind cardKind READ cardKind NOTIFY dataChanged)
+    Q_PROPERTY(QString cardTypeName READ cardTypeName NOTIFY dataChanged)
     Q_PROPERTY(bool nfcEnabled READ nfcEnabled NOTIFY nfcEnabledChanged)
     Q_PROPERTY(QString balanceText READ balanceText NOTIFY dataChanged)
     Q_PROPERTY(quint32 balanceKopecks READ balanceKopecks NOTIFY dataChanged)
@@ -46,6 +48,10 @@ public:
     enum State { Waiting, Reading, Result, Error };
     Q_ENUM(State)
 
+    // Распознанный тип карты (KindUnknown — карта ещё не читалась)
+    enum Kind { KindUnknown, KindPodorozhnik, KindTroika };
+    Q_ENUM(Kind)
+
     explicit CardReader(QObject *parent = nullptr);
 
     // Сбросить результат и прочитать карту заново (кнопка «Обновить»)
@@ -54,6 +60,8 @@ public:
     Q_INVOKABLE void clearHistory();
 
     State state() const { return m_state; }
+    Kind cardKind() const { return m_cardKind; }
+    QString cardTypeName() const;
     bool nfcEnabled() const { return m_nfcEnabled; }
     QString balanceText() const { return m_balanceText; }
     quint32 balanceKopecks() const { return m_balanceKopecks; }
@@ -130,11 +138,16 @@ private:
     void readPassBlocks(int step, const QByteArray &s8b0 = QByteArray(),
                         const QByteArray &s9b0 = QByteArray(),
                         const QByteArray &s11b0 = QByteArray());
+    // Тройка: auth сектора 8 + проверка магии записи, затем дочитка
+    // блоков 33-34 и разбор 48-байтовой записи (troika.cpp)
+    void tryTroikaKeys(int index);
+    void readTroikaBlocks(int step, const QByteArray &record = QByteArray());
 
     QString m_adapterPath;
     QString m_tagPath;
     QByteArray m_uid;
     State m_state = Waiting;
+    Kind m_cardKind = KindUnknown;
     int m_flavor = -1; // формат кадров: flavorNxp/flavorSt, -1 = не определён
     // ST-пробы разрешены только после отвергнутого NXP-auth (пустой ответ
     // или D-Bus-ошибка): сырые ST-кадры вешают прошивку NXP-чипа

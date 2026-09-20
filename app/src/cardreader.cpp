@@ -1,6 +1,7 @@
 #include "cardreader.h"
 
 #include "podorozhnik.h"
+#include "troika.h"
 
 #include <QDBusArgument>
 #include <QDBusConnection>
@@ -69,12 +70,45 @@ const char blockTrip      = 20; // сектор 5, блок 0 — последн
 const char blockCounters1 = 21; // сектор 5, блоки 1-2 — счётчики поездок
 const char blockCounters2 = 22;
 
+// Тройка: сектор 8, блоки 32-34 — основная 48-байтовая запись (кошелёк,
+// последняя поездка, номер карты)
+const char blockTroikaMain = 32;
+
+// Комбинации (формат кадра × ключ A/B × вариант UID) для перебора ключей.
+// Пока формат стека не определён, перебираем оба; после первого успеха
+// используется только он. ST-кадры посылаются только если NXP-auth был
+// ОТВЕРГНУТ стеком — пустым ответом (ST21NFC) или D-Bus-ошибкой
+// (binder-HAL MediaTek): настоящий NXP-чип на auth отвечает {0x40},
+// поэтому до ST-кадров дело не доходит — они вешают прошивку PN7160
+// (EIO на /dev/nxpnfc, NFC отваливается до перезапуска nfcd).
+struct Combo { int flavor; bool keyB; bool uidLeft; };
+
+static QList<Combo> buildCombos(int flavor, bool nxpRejectedSeen, bool uidLeft)
+{
+    QList<Combo> combos;
+    if (flavor == flavorNxp) {
+        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
+    } else if (flavor == flavorSt) {
+        combos << Combo{flavorSt, false, uidLeft} << Combo{flavorSt, true, uidLeft};
+    } else {
+        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
+        if (nxpRejectedSeen) {
+            // Варианты UID в ST-auth разнятся по стекам: ST21NFC ждёт
+            // ПОСЛЕДНИЕ 4 байта UID, binder-HAL MediaTek — первые 4
+            // (как AOSP rw_mfc.c). Перебираем оба.
+            combos << Combo{flavorSt, false, false} << Combo{flavorSt, false, true}
+                   << Combo{flavorSt, true, false} << Combo{flavorSt, true, true};
+        }
+    }
+    return combos;
+}
+
 } // namespace
 
 CardReader::CardReader(QObject *parent)
     : QObject(parent)
 {
-    // История чтений (вкладка «ИЗМЕНЕНИЯ»): «dd.MM.yyyy HH:mm|баланс»
+    // История чтений (вкладка «ИЗМЕНЕНИЯ»): «dd.MM.yyyy HH:mm|баланс|тип»
     m_history = QSettings().value(QStringLiteral("history")).toStringList();
 
     // nfcd может стартовать позже приложения (например, в эмуляторе его нет вовсе)
@@ -83,6 +117,15 @@ CardReader::CardReader(QObject *parent)
     connect(watcher, &QDBusServiceWatcher::serviceRegistered,
             this, &CardReader::onServiceRegistered);
     connectDaemon();
+}
+
+QString CardReader::cardTypeName() const
+{
+    switch (m_cardKind) {
+    case KindPodorozhnik: return tr("Подорожник");
+    case KindTroika:      return tr("Тройка");
+    default:              return QString();
+    }
 }
 
 void CardReader::onServiceRegistered()
@@ -96,6 +139,7 @@ void CardReader::refresh()
         return; // чтение уже идёт
 
     releaseTag();
+    m_cardKind = KindUnknown;
     m_balanceText.clear();
     m_balanceKopecks = 0;
     m_lastReadTime.clear();
@@ -206,6 +250,7 @@ void CardReader::readTag(const QString &tagPath)
     m_uid.clear();
     m_errorText.clear();
     m_nxpRejectedSeen = false;
+    m_cardKind = KindUnknown;
     // Данные прошлой карты не должны попасть в новый результат
     m_lastTripWhen.clear();
     m_lastTripFare.clear();
@@ -310,34 +355,10 @@ void CardReader::tryBalanceKeys(int index)
     if (m_state != Reading)
         return; // карта убрана, пока ждали реактивацию
 
-    // Комбинации (формат кадра × ключ). Пока формат стека не определён,
-    // перебираем оба; после первого успеха используется только он.
-    // ST-кадры посылаются только если NXP-auth был ОТВЕРГНУТ стеком —
-    // пустым ответом (ST21NFC) или D-Bus-ошибкой (binder-HAL MediaTek).
-    // Настоящий NXP-чип с картой «Подорожник» на auth отвечает {0x40},
-    // поэтому до ST-кадров дело не доходит — они вешают прошивку PN7160
-    // (EIO на /dev/nxpnfc, NFC отваливается до перезапуска nfcd).
-    // Остаточный риск: чужая MIFARE-карта на NXP-чипе — оба наших ключа
-    // не подойдут, гейт откроется и ST-кадр уйдёт в PN7160.
-    // Структура комбинации: формат, ключ B, UID в ST-кадре — первые 4 байта.
-    struct Combo { int flavor; bool keyB; bool uidLeft; };
-    QList<Combo> combos;
-    if (m_flavor == flavorNxp) {
-        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
-    } else if (m_flavor == flavorSt) {
-        combos << Combo{flavorSt, false, m_uidLeft} << Combo{flavorSt, true, m_uidLeft};
-    } else {
-        combos << Combo{flavorNxp, false, false} << Combo{flavorNxp, true, false};
-        if (m_nxpRejectedSeen) {
-            // Варианты UID в ST-auth разнятся по стекам: ST21NFC ждёт
-            // ПОСЛЕДНИЕ 4 байта UID, binder-HAL MediaTek — первые 4
-            // (как AOSP rw_mfc.c). Перебираем оба.
-            combos << Combo{flavorSt, false, false} << Combo{flavorSt, false, true}
-                   << Combo{flavorSt, true, false} << Combo{flavorSt, true, true};
-        }
-    }
+    const QList<Combo> combos = buildCombos(m_flavor, m_nxpRejectedSeen, m_uidLeft);
     if (index >= combos.size()) {
-        fail(tr("Не удалось авторизовать сектор баланса: ключ не подошёл"));
+        // Ключи Подорожника не подошли — пробуем Тройку (сектор 8)
+        tryTroikaKeys(0);
         return;
     }
 
@@ -349,6 +370,7 @@ void CardReader::tryBalanceKeys(int index)
                 [this, flavor, uidLeft](const QByteArray &block) {
         m_flavor = flavor;
         m_uidLeft = uidLeft;
+        m_cardKind = KindPodorozhnik;
         m_balanceKopecks = Podorozhnik::balanceFromBlock(block);
         m_balanceText = Podorozhnik::formatBalance(m_balanceKopecks);
         qDebug() << "Баланс:" << m_balanceText
@@ -361,6 +383,85 @@ void CardReader::tryBalanceKeys(int index)
         // пережидаем цикл Classic reset; на NXP пауза безвредна.
         QTimer::singleShot(retryDelayMs, this, [this, index] {
             tryBalanceKeys(index + 1);
+        });
+    });
+}
+
+void CardReader::tryTroikaKeys(int index)
+{
+    if (m_state != Reading)
+        return;
+
+    const QList<Combo> combos = buildCombos(m_flavor, m_nxpRejectedSeen, m_uidLeft);
+    if (index >= combos.size()) {
+        fail(tr("Карта не опознана: поддерживаются «Подорожник» и «Тройка»"));
+        return;
+    }
+
+    const int flavor = combos.at(index).flavor;
+    const bool keyB = combos.at(index).keyB;
+    const bool uidLeft = combos.at(index).uidLeft;
+    authAndRead(flavor, keyB, uidLeft, blockTroikaMain,
+                keyB ? Troika::sector8KeyB : Troika::sector8KeyA,
+                [this, flavor, uidLeft](const QByteArray &block) {
+        // Ключ подошёл. На ST-стеке блок приходит урезанным до 15 байт —
+        // дополняем нулевым, чтобы сохранить битовые смещения записи
+        QByteArray record = block;
+        if (record.size() == 15)
+            record.append('\0');
+        if (!Troika::isTransportRecord(record)) {
+            // Ключ Тройки подошёл, но записи нет — чужая карта
+            fail(tr("Карта не опознана: поддерживаются «Подорожник» и «Тройка»"));
+            return;
+        }
+        m_flavor = flavor;
+        m_uidLeft = uidLeft;
+        m_cardKind = KindTroika;
+        readTroikaBlocks(1, record);
+    }, [this, index](bool nxpRejected) {
+        if (nxpRejected)
+            m_nxpRejectedSeen = true;
+        QTimer::singleShot(retryDelayMs, this, [this, index] {
+            tryTroikaKeys(index + 1);
+        });
+    });
+}
+
+void CardReader::readTroikaBlocks(int step, const QByteArray &record)
+{
+    // Блоки 32-34 уже собираются в record поблочно; всего 3 блока
+    if (step >= 3) {
+        qDebug("Тройка, запись сектора 8: %s", record.toHex().constData());
+        const Troika::PurseInfo purse = Troika::purseFromSector8(record);
+        m_cardNumber = purse.cardNumber;
+        m_balanceKopecks = purse.balanceKopecks;
+        m_balanceText = Podorozhnik::formatBalance(purse.balanceKopecks);
+        if (purse.lastTrip.isValid()) {
+            m_lastTripWhen = purse.lastTrip.toString(QStringLiteral("dd.MM.yyyy HH:mm"));
+            m_lastTripTransport = purse.lastTripTransport;
+            m_lastTripIsMetro = purse.lastTripTransport == QStringLiteral("Метро")
+                    || purse.lastTripTransport == QStringLiteral("МЦК")
+                    || purse.lastTripTransport == QStringLiteral("Монорельс");
+        }
+        finishOk();
+        return;
+    }
+
+    authAndRead(m_flavor, false, m_uidLeft, char(blockTroikaMain + step),
+                Troika::sector8KeyA,
+                [this, step, record](const QByteArray &block) {
+        QByteArray next = record;
+        next += block;
+        if (block.size() == 15)
+            next.append('\0'); // выравнивание срезанного ST-блока
+        readTroikaBlocks(step + 1, next);
+    }, [this, step, record](bool) {
+        // Неудача не фатальна: блок добиваем нулями (сохраняем смещения),
+        // пауза на Classic reset и следующий блок
+        const QByteArray next = record + QByteArray(16, '\0');
+        QTimer::singleShot(retryDelayMs, this, [this, step, next] {
+            if (m_state == Reading)
+                readTroikaBlocks(step + 1, next);
         });
     });
 }
@@ -567,8 +668,11 @@ void CardReader::finishOk()
 
     const QDateTime now = QDateTime::currentDateTime();
     m_lastReadTime = now.toString(QStringLiteral("HH:mm"));
+    // «dd.MM.yyyy HH:mm|баланс|тип карты» (тип появился в 1.3.2 —
+    // у старых записей его нет, QML это учитывает)
     m_history.prepend(now.toString(QStringLiteral("dd.MM.yyyy HH:mm"))
-                      + QLatin1Char('|') + m_balanceText);
+                      + QLatin1Char('|') + m_balanceText
+                      + QLatin1Char('|') + cardTypeName());
     while (m_history.size() > 20)
         m_history.removeLast();
     QSettings().setValue(QStringLiteral("history"), m_history);

@@ -10,11 +10,13 @@ QT += \
 SOURCES += \
     src/main.cpp \
     src/cardreader.cpp \
-    src/podorozhnik.cpp
+    src/podorozhnik.cpp \
+    src/troika.cpp
 
 HEADERS += \
     src/cardreader.h \
-    src/podorozhnik.h
+    src/podorozhnik.h \
+    src/troika.h
 
 DISTFILES += \
     qml/ru.nighteugene.MyTravelPass.qml \

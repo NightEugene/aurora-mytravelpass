@@ -16,15 +16,23 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Не удалось авторизовать сектор баланса: ключ не подошёл</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Карта убрана слишком рано — держите её у телефона до конца чтения</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>метка отключена</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Подорожник</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Тройка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Карта не опознана: поддерживаются «Подорожник» и «Тройка»</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -155,10 +163,6 @@
     </message>
     <message>
         <source>Мой проездной</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Подорожник</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
