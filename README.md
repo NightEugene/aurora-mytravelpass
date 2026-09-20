@@ -8,13 +8,15 @@
 NFC-стека (nfcd).
 
 <p align="center">
-  <img src="screenshots/app-waiting.png" width="200"
+  <img src="screenshots/app-waiting.png" width="180"
        alt="Ожидание карты" />
-  <img src="screenshots/app-balance.png" width="200"
-       alt="Баланс и счётчики поездок" />
-  <img src="screenshots/app-history.png" width="200"
+  <img src="screenshots/app-balance.png" width="180"
+       alt="Подорожник: баланс и поездки" />
+  <img src="screenshots/app-troika.png" width="180"
+       alt="Тройка: баланс" />
+  <img src="screenshots/app-history.png" width="180"
        alt="История чтений" />
-  <img src="screenshots/app-info.png" width="200"
+  <img src="screenshots/app-info.png" width="180"
        alt="Информация о карте" />
 </p>
 
