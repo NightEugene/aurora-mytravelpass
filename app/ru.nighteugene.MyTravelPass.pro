@@ -1,4 +1,4 @@
-TARGET = ru.nighteugene.PodorozhnikBalance
+TARGET = ru.nighteugene.MyTravelPass
 
 CONFIG += \
     auroraapp \
@@ -17,15 +17,15 @@ HEADERS += \
     src/podorozhnik.h
 
 DISTFILES += \
-    qml/ru.nighteugene.PodorozhnikBalance.qml \
+    qml/ru.nighteugene.MyTravelPass.qml \
     qml/pages/MainPage.qml \
     qml/cover/DefaultCoverPage.qml \
-    rpm/ru.nighteugene.PodorozhnikBalance.spec \
-    ru.nighteugene.PodorozhnikBalance.desktop \
+    rpm/ru.nighteugene.MyTravelPass.spec \
+    ru.nighteugene.MyTravelPass.desktop \
     README.md
 
 AURORAAPP_ICONS = 86x86 108x108 128x128 172x172
 
 TRANSLATIONS += \
-    translations/ru.nighteugene.PodorozhnikBalance.ts \
-    translations/ru.nighteugene.PodorozhnikBalance-ru.ts
+    translations/ru.nighteugene.MyTravelPass.ts \
+    translations/ru.nighteugene.MyTravelPass-ru.ts

@@ -1,7 +1,8 @@
-# Подорожник — приложение для ОС Аврора
+# Мой проездной — приложение для ОС Аврора
 
-Приложение показывает баланс проездного «Подорожник» (Санкт-Петербург),
-когда карту прикладывают к телефону по NFC. Карта работает по технологии
+Приложение показывает баланс, данные о поездках и проездных, когда
+транспортную карту прикладывают к телефону по NFC. Пока поддерживается
+только карта «Подорожник» (Санкт-Петербург). Карта работает по технологии
 MIFARE Classic (Crypto1); её поддержка в ОС Аврора ограничена, поэтому
 вторым компонентом проекта ведётся доработка NFC-стека (nfcd).
 
@@ -19,7 +20,7 @@ MIFARE Classic (Crypto1); её поддержка в ОС Аврора огра�
 ## Структура репозитория
 
 - `app/` — приложение для ОС Аврора (Qt5/QML, Silica),
-  пакет `ru.nighteugene.PodorozhnikBalance`.
+  пакет `ru.nighteugene.MyTravelPass`.
 - `nfcd-mifare-classic/` — поддержка MIFARE Classic в nfcd: патчи на
   `sailfishos/nfcd` и `mer-hybris/libnciplugin`, скрипт получения исходников,
   инструкция по сборке в Platform SDK.
@@ -76,8 +77,8 @@ docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v "$PWD":/sources -w /sources
 ИНФО (`qml/pages/MainPage.qml`):
 
 ```sh
-scp app/RPMS/ru.nighteugene.PodorozhnikBalance-<версия>.aarch64.rpm defaultuser@<device>:/tmp/
-ssh defaultuser@<device> 'sdk-deploy-rpm --silent /tmp/ru.nighteugene.PodorozhnikBalance-<версия>.aarch64.rpm'
+scp app/RPMS/ru.nighteugene.MyTravelPass-<версия>.aarch64.rpm defaultuser@<device>:/tmp/
+ssh defaultuser@<device> 'sdk-deploy-rpm --silent /tmp/ru.nighteugene.MyTravelPass-<версия>.aarch64.rpm'
 ```
 
 ## Проверено на устройствах (сентябрь 2026)

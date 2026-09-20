@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=ru.nighteugene.MyTravelPass
+Exec=/usr/bin/ru.nighteugene.MyTravelPass
+Name=Мой проездной
+Name[en]=My Travel Pass
+Comment=Баланс и данные проездных карт по NFC (пока поддерживается только «Подорожник»)
+Comment[en]=Transit card balance over NFC (only Podorozhnik card is supported so far)
+
+[X-Application]
+Permissions=NFC
+OrganizationName=ru.nighteugene
+ApplicationName=MyTravelPass
+ExecDBus=/usr/bin/ru.nighteugene.MyTravelPass

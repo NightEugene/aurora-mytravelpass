@@ -13,7 +13,7 @@ import struct
 import zlib
 
 SIZES = (86, 108, 128, 172)
-ICON_NAME = "ru.nighteugene.PodorozhnikBalance.png"
+ICON_NAME = "ru.nighteugene.MyTravelPass.png"
 
 BG_TOP = (16, 78, 139)      # синий (цвет карты Подорожник)
 BG_BOTTOM = (0, 151, 136)   # бирюзовый

@@ -1,10 +1,10 @@
-Name:       ru.nighteugene.PodorozhnikBalance
-Summary:    Подорожник
-Version:    1.3.1
+Name:       ru.nighteugene.MyTravelPass
+Summary:    Мой проездной
+Version:    1.3.2
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
-URL:        https://github.com/nighteugene/mifare
+URL:        https://github.com/NightEugene/aurora-mytravelpass
 Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
@@ -18,9 +18,11 @@ BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 
 %description
-Приложение показывает баланс проездного «Подорожник» (Санкт-Петербург)
-при поднесении карты к телефону. Карта читается по NFC как MIFARE Classic
-через D-Bus API nfcd.
+«Мой проездной» показывает баланс, данные о поездках и проездных
+при поднесении транспортной карты к телефону. Карта читается по NFC
+как MIFARE Classic через D-Bus API nfcd.
+
+Пока поддерживается только карта «Подорожник» (Санкт-Петербург).
 
 %prep
 %autosetup

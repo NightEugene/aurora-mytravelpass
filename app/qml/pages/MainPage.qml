@@ -2,7 +2,7 @@ import QtQuick 2.0
 import QtGraphicalEffects 1.0
 import Sailfish.Silica 1.0
 import Aurora.Controls 1.0
-import PodorozhnikBalance 1.0
+import MyTravelPass 1.0
 
 Page {
     id: page
@@ -61,7 +61,9 @@ Page {
 
     AppBar {
         id: appBar
-        headerText: qsTr("Подорожник")
+        // После успешного чтения показываем тип распознанной карты
+        headerText: cardReader.state === CardReader.Result
+                    ? qsTr("Подорожник") : qsTr("Мой проездной")
 
         AppBarSpacer {}
 
@@ -729,7 +731,7 @@ Page {
                                         : qsTr("Поездок на наземном"), String(cardReader.groundTrips)],
                                     [qsTr("Разовая поездка"), "65 ₽"],
                                     [qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"],
-                                    [qsTr("Версия"), "1.3.1"]
+                                    [qsTr("Версия"), "1.3.2"]
                                 ]
 
                                 Rectangle {

@@ -6,7 +6,7 @@
 # Использование: scp на устройство, затем `sh nfc-probe.sh` и приложить карту.
 S=org.sailfishos.nfc.daemon
 
-pkill -f PodorozhnikBalance 2>/dev/null
+pkill -f MyTravelPass 2>/dev/null
 sleep 1
 
 tag=""
