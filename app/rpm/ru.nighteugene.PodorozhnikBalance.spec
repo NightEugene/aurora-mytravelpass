@@ -1,6 +1,6 @@
 Name:       ru.nighteugene.PodorozhnikBalance
 Summary:    Подорожник
-Version:    1.3.0
+Version:    1.3.1
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
@@ -9,6 +9,7 @@ Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   aurora-controls
+Requires:   qt5-qtgraphicaleffects
 Requires:   nfcd
 BuildRequires:  pkgconfig(auroraapp)
 BuildRequires:  pkgconfig(Qt5Core)

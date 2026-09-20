@@ -50,10 +50,6 @@
         <translation>Hold the card</translation>
     </message>
     <message>
-        <source>Приложите карту Подорожник к задней панели телефона</source>
-        <translation>Hold the Podorozhnik card to the back of the phone</translation>
-    </message>
-    <message>
         <source>NFC выключен — включите его в настройках</source>
         <translation>NFC is off — enable it in Settings</translation>
     </message>
@@ -82,16 +78,8 @@
         <translation>INFO</translation>
     </message>
     <message>
-        <source>Наземный транспорт</source>
-        <translation>Surface transport</translation>
-    </message>
-    <message>
         <source>Следующая %1 ₽</source>
         <translation>Next ride %1 ₽</translation>
-    </message>
-    <message>
-        <source>Метро</source>
-        <translation>Metro</translation>
     </message>
     <message>
         <source>История появится после первого чтения</source>
@@ -143,6 +131,30 @@
     </message>
     <message>
         <source>Поездок на наземном (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездки по кошельку</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездки по проездному</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Остаток дней</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Проездной</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Метро + Наземный</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Приложите карту к считывателю NFC</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

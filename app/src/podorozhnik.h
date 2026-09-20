@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QDate>
 #include <QString>
 
 // Парсинг данных проездного «Подорожник» (Санкт-Петербург).
@@ -19,6 +20,13 @@ extern const QByteArray sector4KeyA;  // E56AC127DD45 — сектор 4 (бал
 extern const QByteArray sector4KeyB;  // 19FC84A3784B — запасной ключ сектора 4
 extern const QByteArray sector5KeyA;  // 77DABC9825E1 — сектор 5 (поездки)
 extern const QByteArray sector5KeyB;  // 9764FEC3154A — запасной ключ сектора 5
+// Билетная зона (проездные «Единый» и др.), сектора 8-12 — ключи A
+// из полной таблицы plantain.c (Flipper Zero firmware)
+extern const QByteArray sector8KeyA;  // 26973EA74321
+extern const QByteArray sector9KeyA;  // EB0A8FF88ADE
+extern const QByteArray sector10KeyA; // EA0FD73CB149
+extern const QByteArray sector11KeyA; // C76BF71A2509
+extern const QByteArray sector12KeyA; // ACFFFFFFFFFF
 
 // Печатный номер карты: «9643 3078 » + 7-байтовый LE-номер из блока 0
 // + контрольная цифра Луна (как в metrodroid getSerial()).
@@ -64,6 +72,15 @@ bool countersFromBlocks(const QByteArray &block1, const QByteArray &block2,
 
 // «август 2026» — месяц и год по метке времени счётчиков
 QString monthYearText(quint32 minutes);
+
+// Билетная зона (проездные): побайтовый формат публично не
+// задокументирован; известные поля — по plantain_parser (app.py).
+// Дата окончания проездного: сектор 8, блок 0, байты 10-12 —
+// [год-2000, месяц, день+1]; невалидная QDate, если поле пустое или мусор.
+QDate passExpiryFromBlock(const QByteArray &block);
+// Счётчик поездок метро по проездному: сектор 9, блок 0 — value block
+// (значение LE, ~значение, значение). false, если блок не value block.
+bool passRidesFromBlock(const QByteArray &block, quint32 &rides);
 
 // «1 234,56 ₽»
 QString formatBalance(quint32 kopecks);

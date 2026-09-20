@@ -37,6 +37,8 @@ class CardReader : public QObject
     Q_PROPERTY(int subwayTrips READ subwayTrips NOTIFY dataChanged)
     Q_PROPERTY(int groundTrips READ groundTrips NOTIFY dataChanged)
     Q_PROPERTY(QString tripsPeriod READ tripsPeriod NOTIFY dataChanged)
+    Q_PROPERTY(int passDaysLeft READ passDaysLeft NOTIFY dataChanged)
+    Q_PROPERTY(QString passRides READ passRides NOTIFY dataChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorChanged)
     Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
 
@@ -67,6 +69,8 @@ public:
     int subwayTrips() const { return m_subwayTrips; }
     int groundTrips() const { return m_groundTrips; }
     QString tripsPeriod() const { return m_tripsPeriod; }
+    int passDaysLeft() const { return m_passDaysLeft; }
+    QString passRides() const { return m_passRides; }
     QString errorText() const { return m_errorText; }
     QStringList history() const { return m_history; }
 
@@ -120,6 +124,12 @@ private:
     void readTripBlocks(int step, bool keyB, const QByteArray &tripBlock = QByteArray(),
                         const QByteArray &counterBlock1 = QByteArray(),
                         const QByteArray &counterBlock2 = QByteArray());
+    // Билетная зона «Единого» (сектора 8-12): читаются после поездок,
+    // ошибки не фатальны. s8b0/s9b0/s11b0 — накопленные нулевые блоки
+    // секторов 8, 9 и 11 (известные поля по plantain_parser)
+    void readPassBlocks(int step, const QByteArray &s8b0 = QByteArray(),
+                        const QByteArray &s9b0 = QByteArray(),
+                        const QByteArray &s11b0 = QByteArray());
 
     QString m_adapterPath;
     QString m_tagPath;
@@ -146,6 +156,8 @@ private:
     int m_subwayTrips = 0;
     int m_groundTrips = 0;
     QString m_tripsPeriod;
+    int m_passDaysLeft = -1; // дней до конца проездного; -1 — нет/истёк
+    QString m_passRides;
     QString m_errorText;
     QStringList m_history;
 };

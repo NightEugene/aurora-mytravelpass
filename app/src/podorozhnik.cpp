@@ -10,6 +10,11 @@ const QByteArray sector4KeyA = QByteArray::fromHex("E56AC127DD45");
 const QByteArray sector4KeyB = QByteArray::fromHex("19FC84A3784B");
 const QByteArray sector5KeyA = QByteArray::fromHex("77DABC9825E1");
 const QByteArray sector5KeyB = QByteArray::fromHex("9764FEC3154A");
+const QByteArray sector8KeyA  = QByteArray::fromHex("26973EA74321");
+const QByteArray sector9KeyA  = QByteArray::fromHex("EB0A8FF88ADE");
+const QByteArray sector10KeyA = QByteArray::fromHex("EA0FD73CB149");
+const QByteArray sector11KeyA = QByteArray::fromHex("C76BF71A2509");
+const QByteArray sector12KeyA = QByteArray::fromHex("ACFFFFFFFFFF");
 
 // Все многобайтовые целые на карте — little-endian (metrodroid byteArrayToIntReversed)
 static quint64 leUInt(const QByteArray &data, int offset, int size)
@@ -85,11 +90,11 @@ QString transportName(quint8 transport, quint16 validator)
 {
     switch (transport) {
     case 1: // метро; validator == 0 — криво настроенный валидатор наземного
-        return validator == 0 ? QStringLiteral("Наземный транспорт")
+        return validator == 0 ? QStringLiteral("Наземный")
                               : QStringLiteral("Метро");
     case 3: // автобус с переносным валидатором
     case 4: // автобус со стационарным валидатором
-        return QStringLiteral("Наземный транспорт");
+        return QStringLiteral("Наземный");
     case 7:
         return QStringLiteral("Маршрутное такси");
     default:
@@ -128,6 +133,33 @@ QString monthYearText(quint32 minutes)
     const QLocale ru(QLocale::Russian, QLocale::Russia);
     return ru.standaloneMonthName(date.month(), QLocale::LongFormat)
             + QLatin1Char(' ') + QString::number(date.year());
+}
+
+QDate passExpiryFromBlock(const QByteArray &block)
+{
+    if (block.size() < 13)
+        return QDate();
+    const int year  = 2000 + quint8(block.at(10));
+    const int month = quint8(block.at(11));
+    const int day   = quint8(block.at(12)) - 1; // день хранится +1
+    const QDate date(year, month, day);
+    // Отсекаем пустое поле (00 00 00 / FF FF FF) и явный мусор
+    if (!date.isValid() || year < 2015 || year > 2040)
+        return QDate();
+    return date;
+}
+
+bool passRidesFromBlock(const QByteArray &block, quint32 &rides)
+{
+    if (block.size() < 12)
+        return false;
+    const quint32 v1 = quint32(leUInt(block, 0, 4));
+    const quint32 v2 = quint32(leUInt(block, 4, 4));
+    const quint32 v3 = quint32(leUInt(block, 8, 4));
+    if (v1 != v3 || v2 != ~v1) // value block: значение, ~значение, значение
+        return false;
+    rides = v1;
+    return true;
 }
 
 QString formatBalance(quint32 kopecks)

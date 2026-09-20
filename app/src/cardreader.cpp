@@ -110,6 +110,8 @@ void CardReader::refresh()
     m_subwayTrips = 0;
     m_groundTrips = 0;
     m_tripsPeriod.clear();
+    m_passDaysLeft = -1;
+    m_passRides.clear();
     m_errorText.clear();
     setState(Waiting);
     emit dataChanged();
@@ -214,6 +216,8 @@ void CardReader::readTag(const QString &tagPath)
     m_subwayTrips = 0;
     m_groundTrips = 0;
     m_tripsPeriod.clear();
+    m_passDaysLeft = -1;
+    m_passRides.clear();
     setState(Reading);
 
     QDBusConnection::systemBus().connect(nfcService, tagPath, tagIface,
@@ -470,7 +474,7 @@ void CardReader::readTripBlocks(int step, bool keyB, const QByteArray &tripBlock
                                                 countersTs))
                 m_tripsPeriod = Podorozhnik::monthYearText(countersTs);
         }
-        finishOk();
+        readPassBlocks(0);
         return;
     }
 
@@ -494,6 +498,64 @@ void CardReader::readTripBlocks(int step, bool keyB, const QByteArray &tripBlock
                            [this, step, keyB, tripBlock, counterBlock1, counterBlock2] {
             if (m_state == Reading)
                 readTripBlocks(step + 1, keyB, tripBlock, counterBlock1, counterBlock2);
+        });
+    });
+}
+
+void CardReader::readPassBlocks(int step, const QByteArray &s8b0,
+                                const QByteArray &s9b0, const QByteArray &s11b0)
+{
+    // Билетная зона «Единого» — сектора 8-12 (ключи из plantain.c).
+    // Побайтовый формат проездных публично не задокументирован: читаем
+    // все блоки данных каждого сектора и логируем сырыми для будущего
+    // анализа; парсим только поля, известные по plantain_parser —
+    // сектор 8 блок 0 (дата окончания проездного) и счётчики поездок —
+    // value-блоки: сектор 9 блок 0 (метро), предположительно сектор 11
+    // блок 0 (наземный — на картах без проездного там нули, как в 9).
+    static const struct { char sector; const QByteArray *key; } zones[] = {
+        {  8, &Podorozhnik::sector8KeyA  },
+        {  9, &Podorozhnik::sector9KeyA  },
+        { 10, &Podorozhnik::sector10KeyA },
+        { 11, &Podorozhnik::sector11KeyA },
+        { 12, &Podorozhnik::sector12KeyA },
+    };
+    const int total = int(sizeof(zones) / sizeof(zones[0])) * 3;
+    if (step >= total) {
+        // Дата окончания проездного → сколько дней осталось (истёкший
+        // и отсутствующий проездной не показываем: -1)
+        const QDate expiry = Podorozhnik::passExpiryFromBlock(s8b0);
+        if (expiry.isValid()) {
+            const qint64 days = QDate::currentDate().daysTo(expiry);
+            if (days >= 0)
+                m_passDaysLeft = int(days);
+        }
+        quint32 rides = 0, metro = 0, ground = 0;
+        if (Podorozhnik::passRidesFromBlock(s9b0, metro))
+            rides += metro;
+        if (Podorozhnik::passRidesFromBlock(s11b0, ground))
+            rides += ground;
+        if (rides > 0)
+            m_passRides = QString::number(rides);
+        finishOk();
+        return;
+    }
+
+    const int zone = step / 3;
+    const int blockInSector = step % 3;
+    const char block = char(zones[zone].sector * 4 + blockInSector);
+    authAndRead(m_flavor, false, m_uidLeft, block, *zones[zone].key,
+                [this, step, zone, blockInSector, s8b0, s9b0, s11b0](const QByteArray &data) {
+        qDebug("Билетная зона: сектор %d блок %d: %s",
+               zones[zone].sector, blockInSector, data.toHex().constData());
+        readPassBlocks(step + 1,
+                       zone == 0 && blockInSector == 0 ? data : s8b0,
+                       zone == 1 && blockInSector == 0 ? data : s9b0,
+                       zone == 3 && blockInSector == 0 ? data : s11b0);
+    }, [this, step, s8b0, s9b0, s11b0](bool) {
+        // Неудача не фатальна — пауза на цикл Classic reset и дальше
+        QTimer::singleShot(retryDelayMs, this, [this, step, s8b0, s9b0, s11b0] {
+            if (m_state == Reading)
+                readPassBlocks(step + 1, s8b0, s9b0, s11b0);
         });
     });
 }

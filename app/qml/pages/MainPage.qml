@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtGraphicalEffects 1.0
 import Sailfish.Silica 1.0
 import Aurora.Controls 1.0
 import PodorozhnikBalance 1.0
@@ -6,11 +7,10 @@ import PodorozhnikBalance 1.0
 Page {
     id: page
 
-    // Тарифы СПб с 01.01.2026 по карте «Подорожник», ₽ за поездку — для
-    // счётчиков «хватит на N поездок». Разовая поездка в метро и наземном
+    // Тариф СПб с 01.01.2026 по карте «Подорожник», ₽ за поездку — для
+    // счётчика «хватит на N поездок». Разовая поездка в метро и наземном
     // транспорте стоит одинаково — 65 ₽.
-    readonly property int fareGround: 65
-    readonly property int fareMetro: 65
+    readonly property int fare: 65
 
     // Фон полос: чуть заметная заливка в цвете текущей темы (тёмной или светлой)
     readonly property color plateColor: Theme.rgba(Theme.primaryColor, 0.05)
@@ -152,7 +152,7 @@ Page {
             }
         }
 
-        // Вкладки (с отступами сверху и снизу)
+        // Вкладки (с увеличенным отступом снизу)
         Item {
             id: tabs
             anchors {
@@ -160,7 +160,7 @@ Page {
                 topMargin: Theme.paddingMedium
             }
             width: parent.width
-            height: tabsRow.height + 2 * Theme.paddingMedium
+            height: tabsRow.height + 2 * Theme.paddingLarge
 
             Row {
                 id: tabsRow
@@ -244,7 +244,7 @@ Page {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
                 visible: cardReader.state === CardReader.Waiting
-                text: qsTr("Приложите карту Подорожник к задней панели телефона")
+                text: qsTr("Приложите карту к считывателю NFC")
             }
 
             Label {
@@ -351,7 +351,8 @@ Page {
                         width: parent.width
                         spacing: Theme.paddingSmall
 
-                        // ОСТАТОК: счётчики поездок
+                        // ОСТАТОК: счётчик поездок (тариф в метро и наземном
+                        // транспорте одинаковый — одна общая полоса)
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: parent.width - 2 * Theme.horizontalPageMargin
@@ -363,34 +364,43 @@ Page {
                                 height: Theme.itemSizeSmall
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
+                                visible: cardReader.state === CardReader.Result
 
-                                Image {
+                                // Знак рубля вместо иконки (в теме его нет)
+                                Label {
+                                    id: rubleSign
                                     x: Theme.paddingMedium
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: "image://theme/icon-m-car"
+                                    width: Theme.iconSizeMedium
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: "₽"
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeExtraLarge
                                 }
 
                                 Column {
                                     anchors {
-                                        left: parent.left
+                                        left: rubleSign.right
                                         leftMargin: Theme.paddingMedium
-                                            + Theme.iconSizeMedium + Theme.paddingMedium
+                                        right: tripCountLabel.left
+                                        rightMargin: Theme.paddingMedium
                                         verticalCenter: parent.verticalCenter
                                     }
 
                                     Label {
-                                        text: qsTr("Наземный транспорт")
+                                        text: qsTr("Поездки по кошельку")
                                         color: Theme.primaryColor
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
-                                        text: qsTr("Следующая %1 ₽").arg(page.fareGround)
+                                        text: qsTr("Следующая %1 ₽").arg(page.fare)
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
                                     }
                                 }
 
                                 Label {
+                                    id: tripCountLabel
                                     anchors {
                                         right: parent.right
                                         rightMargin: Theme.paddingMedium
@@ -398,22 +408,96 @@ Page {
                                     }
                                     visible: cardReader.state === CardReader.Result
                                     text: Math.floor(cardReader.balanceKopecks
-                                                     / 100 / page.fareGround)
+                                                     / 100 / page.fare)
                                     color: Theme.primaryColor
                                     font.pixelSize: Theme.fontSizeMedium
                                 }
                             }
 
+                            // Поездки по проездному (билетная зона, сектор 9)
                             Rectangle {
                                 width: parent.width
                                 height: Theme.itemSizeSmall
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
+                                visible: cardReader.state === CardReader.Result
+
+                                // Автобус (своей иконкой, в теме её нет) + метро
+                                Row {
+                                    id: passRidesIcons
+                                    x: Theme.paddingMedium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Theme.paddingSmall / 2
+
+                                    Image {
+                                        id: passBusIconSource
+                                        visible: false
+                                        source: "../icons/icon-m-bus.png"
+                                    }
+
+                                    ColorOverlay {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: Theme.iconSizeSmall
+                                        height: Theme.iconSizeSmall
+                                        source: passBusIconSource
+                                        color: Theme.primaryColor
+                                    }
+
+                                    Image {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: Theme.iconSizeSmall
+                                        height: Theme.iconSizeSmall
+                                        source: "image://theme/icon-m-train"
+                                    }
+                                }
+
+                                Column {
+                                    anchors {
+                                        left: passRidesIcons.right
+                                        leftMargin: Theme.paddingMedium
+                                        right: passRidesLabel.left
+                                        rightMargin: Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+
+                                    Label {
+                                        text: qsTr("Поездки по проездному")
+                                        color: Theme.primaryColor
+                                        font.pixelSize: Theme.fontSizeSmall
+                                    }
+                                    Label {
+                                        text: qsTr("Метро + Наземный")
+                                        color: Theme.secondaryColor
+                                        font.pixelSize: Theme.fontSizeExtraSmall
+                                    }
+                                }
+
+                                Label {
+                                    id: passRidesLabel
+                                    anchors {
+                                        right: parent.right
+                                        rightMargin: Theme.paddingMedium
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                    text: cardReader.passRides.length > 0
+                                          ? cardReader.passRides : "—"
+                                    color: Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeMedium
+                                }
+                            }
+
+                            // Остаток дней проездного (билетная зона, сектор 8)
+                            Rectangle {
+                                width: parent.width
+                                height: Theme.itemSizeSmall
+                                radius: Theme.paddingMedium
+                                color: page.plateColor
+                                visible: cardReader.state === CardReader.Result
 
                                 Image {
                                     x: Theme.paddingMedium
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: "image://theme/icon-m-train"
+                                    source: "image://theme/icon-m-calendar-day"
                                 }
 
                                 Column {
@@ -421,30 +505,32 @@ Page {
                                         left: parent.left
                                         leftMargin: Theme.paddingMedium
                                             + Theme.iconSizeMedium + Theme.paddingMedium
+                                        right: passDaysLabel.left
+                                        rightMargin: Theme.paddingMedium
                                         verticalCenter: parent.verticalCenter
                                     }
 
                                     Label {
-                                        text: qsTr("Метро")
+                                        text: qsTr("Остаток дней")
                                         color: Theme.primaryColor
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
-                                        text: qsTr("Следующая %1 ₽").arg(page.fareMetro)
+                                        text: qsTr("Проездной")
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
                                     }
                                 }
 
                                 Label {
+                                    id: passDaysLabel
                                     anchors {
                                         right: parent.right
                                         rightMargin: Theme.paddingMedium
                                         verticalCenter: parent.verticalCenter
                                     }
-                                    visible: cardReader.state === CardReader.Result
-                                    text: Math.floor(cardReader.balanceKopecks
-                                                     / 100 / page.fareMetro)
+                                    text: cardReader.passDaysLeft >= 0
+                                          ? cardReader.passDaysLeft : "—"
                                     color: Theme.primaryColor
                                     font.pixelSize: Theme.fontSizeMedium
                                 }
@@ -462,9 +548,24 @@ Page {
                                 Image {
                                     x: Theme.paddingMedium
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: cardReader.lastTripIsMetro
-                                            ? "image://theme/icon-m-train"
-                                            : "image://theme/icon-m-car"
+                                    visible: cardReader.lastTripIsMetro
+                                    source: "image://theme/icon-m-train"
+                                }
+
+                                Image {
+                                    id: tripBusIconSource
+                                    visible: false
+                                    source: "../icons/icon-m-bus.png"
+                                }
+
+                                ColorOverlay {
+                                    x: Theme.paddingMedium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: Theme.iconSizeMedium
+                                    height: Theme.iconSizeMedium
+                                    visible: !cardReader.lastTripIsMetro
+                                    source: tripBusIconSource
+                                    color: Theme.primaryColor
                                 }
 
                                 Column {
@@ -472,6 +573,8 @@ Page {
                                         left: parent.left
                                         leftMargin: Theme.paddingMedium
                                             + Theme.iconSizeMedium + Theme.paddingMedium
+                                        right: tripFareLabel.left
+                                        rightMargin: Theme.paddingMedium
                                         verticalCenter: parent.verticalCenter
                                     }
 
@@ -481,6 +584,8 @@ Page {
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
+                                        width: parent.width
+                                        elide: Text.ElideRight
                                         text: cardReader.lastTripTransport
                                               + " · " + cardReader.lastTripWhen
                                         color: Theme.secondaryColor
@@ -489,6 +594,7 @@ Page {
                                 }
 
                                 Label {
+                                    id: tripFareLabel
                                     anchors {
                                         right: parent.right
                                         rightMargin: Theme.paddingMedium
@@ -520,6 +626,8 @@ Page {
                                         left: parent.left
                                         leftMargin: Theme.paddingMedium
                                             + Theme.iconSizeMedium + Theme.paddingMedium
+                                        right: topupAmountLabel.left
+                                        rightMargin: Theme.paddingMedium
                                         verticalCenter: parent.verticalCenter
                                     }
 
@@ -529,6 +637,8 @@ Page {
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
+                                        width: parent.width
+                                        elide: Text.ElideRight
                                         text: cardReader.lastTopupWhen
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
@@ -536,6 +646,7 @@ Page {
                                 }
 
                                 Label {
+                                    id: topupAmountLabel
                                     anchors {
                                         right: parent.right
                                         rightMargin: Theme.paddingMedium
@@ -618,7 +729,7 @@ Page {
                                         : qsTr("Поездок на наземном"), String(cardReader.groundTrips)],
                                     [qsTr("Разовая поездка"), "65 ₽"],
                                     [qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"],
-                                    [qsTr("Версия"), "1.3.0"]
+                                    [qsTr("Версия"), "1.3.1"]
                                 ]
 
                                 Rectangle {
@@ -626,6 +737,7 @@ Page {
                                     height: infoColumn.height + 2 * Theme.paddingSmall
                                     radius: Theme.paddingSmall
                                     color: page.plateColor
+                                    visible: cardReader.state === CardReader.Result
 
                                     // Двухэтажная строка: подпись сверху, значение снизу —
                                     // длинные значения (номер карты) не налезают на подпись
