@@ -1,6 +1,6 @@
 Name:       ru.nighteugene.MyTravelPass
-Summary:    Мой проездной
-Version:    1.4.0
+Summary:    Проездной
+Version:    1.4.1
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
@@ -18,7 +18,7 @@ BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 
 %description
-«Мой проездной» показывает баланс, данные о поездках и проездных
+«Проездной» показывает баланс, данные о поездках и проездных
 при поднесении транспортной карты к телефону. Карта читается по NFC
 как MIFARE Classic через D-Bus API nfcd.
 

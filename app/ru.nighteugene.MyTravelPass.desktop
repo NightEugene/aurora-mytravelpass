@@ -3,8 +3,8 @@ Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=ru.nighteugene.MyTravelPass
 Exec=/usr/bin/ru.nighteugene.MyTravelPass
-Name=Мой проездной
-Name[en]=My Travel Pass
+Name=Проездной
+Name[en]=Travel Pass
 Comment=Баланс и данные проездных карт по NFC («Подорожник», «Тройка»)
 Comment[en]=Transit card balance over NFC (Podorozhnik, Troika)
 

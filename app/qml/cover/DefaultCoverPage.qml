@@ -21,7 +21,7 @@ CoverBackground {
                             ? Theme.fontSizeLarge : Theme.fontSizeMedium
             color: Theme.highlightColor
             text: cardReader.state === CardReader.Result
-                  ? cardReader.balanceText : qsTr("Мой проездной")
+                  ? cardReader.balanceText : qsTr("Проездной")
         }
 
         Label {

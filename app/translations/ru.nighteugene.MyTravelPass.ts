@@ -43,7 +43,7 @@
         <translation>balance</translation>
     </message>
     <message>
-        <source>Мой проездной</source>
+        <source>Проездной</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -159,10 +159,6 @@
     </message>
     <message>
         <source>Приложите карту к считывателю NFC</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Мой проездной</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

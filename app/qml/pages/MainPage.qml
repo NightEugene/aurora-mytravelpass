@@ -64,7 +64,7 @@ Page {
         // После успешного чтения показываем тип распознанной карты
         headerText: cardReader.state === CardReader.Result
                     && cardReader.cardTypeName.length > 0
-                    ? cardReader.cardTypeName : qsTr("Мой проездной")
+                    ? cardReader.cardTypeName : qsTr("Проездной")
 
         AppBarSpacer {}
 
@@ -764,7 +764,7 @@ Page {
                                         rows.push([qsTr("Разовая поездка"), "65 ₽"])
                                         rows.push([qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"])
                                     }
-                                    rows.push([qsTr("Версия"), "1.4.0"])
+                                    rows.push([qsTr("Версия"), "1.4.1"])
                                     return rows
                                 }
 
