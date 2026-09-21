@@ -12,12 +12,16 @@ NFC-стека (nfcd).
        alt="Ожидание карты" />
   <img src="screenshots/app-balance.png" width="180"
        alt="Подорожник: баланс и поездки" />
+  <img src="screenshots/app-pass.png" width="180"
+       alt="Подорожник: проездной, остаток дней" />
   <img src="screenshots/app-troika.png" width="180"
        alt="Тройка: баланс" />
   <img src="screenshots/app-history.png" width="180"
        alt="История чтений" />
   <img src="screenshots/app-info.png" width="180"
        alt="Информация о карте" />
+  <img src="screenshots/app-cover.png" width="180"
+       alt="Обложка приложения" />
 </p>
 
 ## Структура репозитория
