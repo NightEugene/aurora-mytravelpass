@@ -524,13 +524,25 @@ void CardReader::authAndRead(int flavor, bool keyB, bool uidLeft, char block,
 
 void CardReader::readCardNumber()
 {
-    // Номер карты — необязательные данные: любая ошибка здесь не фатальна
+    // Номер карты — необязательные данные: любая ошибка здесь не фатальна.
+    // Сектор 0 обычно с заводским ключом FFFF…, но бывает закрыт
+    // MAD-ключом (БСК: A0A1A2A3A4A5) — пробуем оба; если блок 0 совсем
+    // не читается, считаем номер из UID (для 7-байтового UID байты 0-6
+    // блока 0 — это и есть UID, как в metrodroid getSerial).
     authAndRead(m_flavor, false, m_uidLeft, blockNumber, Podorozhnik::keyDefault,
                 [this](const QByteArray &block) {
         m_cardNumber = Podorozhnik::cardNumberFromBlock0(block);
         readTopup();
     }, [this](bool) {
-        readTopup();
+        authAndRead(m_flavor, false, m_uidLeft, blockNumber, Podorozhnik::keyMad,
+                    [this](const QByteArray &block) {
+            m_cardNumber = Podorozhnik::cardNumberFromBlock0(block);
+            readTopup();
+        }, [this](bool) {
+            if (m_uid.size() == 7)
+                m_cardNumber = Podorozhnik::cardNumberFromBlock0(m_uid);
+            readTopup();
+        });
     });
 }
 
@@ -603,31 +615,45 @@ void CardReader::readTripBlocks(int step, bool keyB, const QByteArray &tripBlock
     });
 }
 
-void CardReader::readPassBlocks(int step, const QByteArray &s8b0,
+void CardReader::readPassBlocks(int step, int failCount, const QByteArray &s8b0,
+                                const QByteArray &s8b1,
                                 const QByteArray &s9b0, const QByteArray &s11b0)
 {
     // Билетная зона «Единого» — сектора 8-12 (ключи из plantain.c).
     // Побайтовый формат проездных публично не задокументирован: читаем
-    // все блоки данных каждого сектора и логируем сырыми для будущего
-    // анализа; парсим только поля, известные по plantain_parser —
-    // сектор 8 блок 0 (дата окончания проездного) и счётчики поездок —
-    // value-блоки: сектор 9 блок 0 (метро), предположительно сектор 11
-    // блок 0 (наземный — на картах без проездного там нули, как в 9).
-    static const struct { char sector; const QByteArray *key; } zones[] = {
-        {  8, &Podorozhnik::sector8KeyA  },
-        {  9, &Podorozhnik::sector9KeyA  },
-        { 10, &Podorozhnik::sector10KeyA },
-        { 11, &Podorozhnik::sector11KeyA },
-        { 12, &Podorozhnik::sector12KeyA },
+    // все блоки каждого сектора (включая трейлер — ради access bits)
+    // и логируем сырыми для будущего анализа; парсим только поля,
+    // известные по plantain_parser — сектор 8 блок 0 (дата окончания
+    // проездного) и счётчики поездок — value-блоки: сектор 9 блок 0
+    // (метро), предположительно сектор 11 блок 0 (наземный — на картах
+    // без проездного там нули, как в 9).
+    static const struct { char sector; const QByteArray *keyA; const QByteArray *keyB; } zones[] = {
+        {  8, &Podorozhnik::sector8KeyA,  &Podorozhnik::sector8KeyB  },
+        {  9, &Podorozhnik::sector9KeyA,  &Podorozhnik::sector9KeyB  },
+        { 10, &Podorozhnik::sector10KeyA, &Podorozhnik::sector10KeyB },
+        { 11, &Podorozhnik::sector11KeyA, &Podorozhnik::sector11KeyB },
+        { 12, &Podorozhnik::sector12KeyA, &Podorozhnik::sector12KeyB },
     };
-    const int total = int(sizeof(zones) / sizeof(zones[0])) * 3;
+    const int blocksPerSector = 4; // включая трейлер — ради access bits
+    const int total = int(sizeof(zones) / sizeof(zones[0])) * blocksPerSector;
     if (step >= total) {
-        // Дата окончания проездного → сколько дней осталось (истёкший
-        // и отсутствующий проездной не показываем: -1)
-        const QDate expiry = Podorozhnik::passExpiryFromBlock(s8b0);
+        // Дата окончания проездного → сколько дней осталось, включая
+        // последний день (истёкший и отсутствующий проездной не
+        // показываем: -1)
+        QDate expiry = Podorozhnik::passExpiryFromBlock(s8b0);
+        if (!expiry.isValid()) {
+            // s8b0 не читается на связке БСК + ST21NFC (карта NAK-ит
+            // блок, хотя access bits чтение разрешают; на других
+            // устройствах читается). Запасной путь: конец периода =
+            // начало (s8b1) + 1 месяц - 1 день. Проверено на БСК:
+            // 13.09.2026 → 12.10.2026 — совпало с Android-приложением.
+            const QDate start = Podorozhnik::passStartFromBlock(s8b1);
+            if (start.isValid())
+                expiry = start.addMonths(1).addDays(-1);
+        }
         if (expiry.isValid()) {
-            const qint64 days = QDate::currentDate().daysTo(expiry);
-            if (days >= 0)
+            const qint64 days = QDate::currentDate().daysTo(expiry) + 1;
+            if (days > 0)
                 m_passDaysLeft = int(days);
         }
         quint32 rides = 0, metro = 0, ground = 0;
@@ -641,22 +667,32 @@ void CardReader::readPassBlocks(int step, const QByteArray &s8b0,
         return;
     }
 
-    const int zone = step / 3;
-    const int blockInSector = step % 3;
+    const int zone = step / blocksPerSector;
+    const int blockInSector = step % blocksPerSector;
     const char block = char(zones[zone].sector * 4 + blockInSector);
-    authAndRead(m_flavor, false, m_uidLeft, block, *zones[zone].key,
-                [this, step, zone, blockInSector, s8b0, s9b0, s11b0](const QByteArray &data) {
+    // На отдельных блоках чтение то NAK-ится, то проходит (карта на
+    // грани поля?) — до четырёх попыток, чередуя ключи A и B.
+    const bool keyB = failCount % 2 == 1;
+    authAndRead(m_flavor, keyB, m_uidLeft, block,
+                *(keyB ? zones[zone].keyB : zones[zone].keyA),
+                [this, step, zone, blockInSector, s8b0, s8b1, s9b0, s11b0](const QByteArray &data) {
         qDebug("Билетная зона: сектор %d блок %d: %s",
                zones[zone].sector, blockInSector, data.toHex().constData());
-        readPassBlocks(step + 1,
+        readPassBlocks(step + 1, 0,
                        zone == 0 && blockInSector == 0 ? data : s8b0,
+                       zone == 0 && blockInSector == 1 ? data : s8b1,
                        zone == 1 && blockInSector == 0 ? data : s9b0,
                        zone == 3 && blockInSector == 0 ? data : s11b0);
-    }, [this, step, s8b0, s9b0, s11b0](bool) {
-        // Неудача не фатальна — пауза на цикл Classic reset и дальше
-        QTimer::singleShot(retryDelayMs, this, [this, step, s8b0, s9b0, s11b0] {
-            if (m_state == Reading)
-                readPassBlocks(step + 1, s8b0, s9b0, s11b0);
+    }, [this, step, failCount, s8b0, s8b1, s9b0, s11b0](bool) {
+        // Пауза на цикл Classic reset, затем повтор с другим ключом;
+        // исчерпав попытки — пропускаем блок, это не фатально.
+        QTimer::singleShot(retryDelayMs, this, [this, step, failCount, s8b0, s8b1, s9b0, s11b0] {
+            if (m_state != Reading)
+                return;
+            if (failCount < 3)
+                readPassBlocks(step, failCount + 1, s8b0, s8b1, s9b0, s11b0);
+            else
+                readPassBlocks(step + 1, 0, s8b0, s8b1, s9b0, s11b0);
         });
     });
 }

@@ -6,15 +6,21 @@
 namespace Podorozhnik {
 
 const QByteArray keyDefault  = QByteArray::fromHex("FFFFFFFFFFFF");
+const QByteArray keyMad      = QByteArray::fromHex("A0A1A2A3A4A5");
 const QByteArray sector4KeyA = QByteArray::fromHex("E56AC127DD45");
 const QByteArray sector4KeyB = QByteArray::fromHex("19FC84A3784B");
 const QByteArray sector5KeyA = QByteArray::fromHex("77DABC9825E1");
 const QByteArray sector5KeyB = QByteArray::fromHex("9764FEC3154A");
 const QByteArray sector8KeyA  = QByteArray::fromHex("26973EA74321");
+const QByteArray sector8KeyB  = QByteArray::fromHex("D27058C6E2C7");
 const QByteArray sector9KeyA  = QByteArray::fromHex("EB0A8FF88ADE");
+const QByteArray sector9KeyB  = QByteArray::fromHex("578A9ADA41E3");
 const QByteArray sector10KeyA = QByteArray::fromHex("EA0FD73CB149");
+const QByteArray sector10KeyB = QByteArray::fromHex("29C35FA068FB");
 const QByteArray sector11KeyA = QByteArray::fromHex("C76BF71A2509");
+const QByteArray sector11KeyB = QByteArray::fromHex("9BA241DB3F56");
 const QByteArray sector12KeyA = QByteArray::fromHex("ACFFFFFFFFFF");
+const QByteArray sector12KeyB = QByteArray::fromHex("71F3A315AD26");
 
 // Все многобайтовые целые на карте — little-endian (metrodroid byteArrayToIntReversed)
 static quint64 leUInt(const QByteArray &data, int offset, int size)
@@ -141,9 +147,22 @@ QDate passExpiryFromBlock(const QByteArray &block)
         return QDate();
     const int year  = 2000 + quint8(block.at(10));
     const int month = quint8(block.at(11));
-    const int day   = quint8(block.at(12)) - 1; // день хранится +1
+    const int day   = quint8(block.at(12));
     const QDate date(year, month, day);
     // Отсекаем пустое поле (00 00 00 / FF FF FF) и явный мусор
+    if (!date.isValid() || year < 2015 || year > 2040)
+        return QDate();
+    return date;
+}
+
+QDate passStartFromBlock(const QByteArray &block)
+{
+    if (block.size() < 3)
+        return QDate();
+    const int year  = 2000 + quint8(block.at(0));
+    const int month = quint8(block.at(1));
+    const int day   = quint8(block.at(2));
+    const QDate date(year, month, day);
     if (!date.isValid() || year < 2015 || year > 2040)
         return QDate();
     return date;

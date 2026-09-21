@@ -132,7 +132,10 @@ Page {
                 Label {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: cardReader.state === CardReader.Result
-                    text: cardReader.balanceText
+                    // Действующий проездной важнее кошелька: «22 д.»
+                    text: cardReader.passDaysLeft >= 0
+                          ? qsTr("%1 д.").arg(cardReader.passDaysLeft)
+                          : cardReader.balanceText
                     color: "white"
                     font.pixelSize: Theme.fontSizeHuge * 1.2
                     font.bold: true
@@ -764,7 +767,7 @@ Page {
                                         rows.push([qsTr("Разовая поездка"), "65 ₽"])
                                         rows.push([qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"])
                                     }
-                                    rows.push([qsTr("Версия"), "1.4.1"])
+                                    rows.push([qsTr("Версия"), "1.4.2"])
                                     return rows
                                 }
 

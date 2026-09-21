@@ -46,6 +46,14 @@
         <source>Проездной</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>%1 д.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>осталось</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MainPage</name>
@@ -159,6 +167,10 @@
     </message>
     <message>
         <source>Приложите карту к считывателю NFC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 д.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

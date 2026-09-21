@@ -133,9 +133,10 @@ private:
                         const QByteArray &counterBlock1 = QByteArray(),
                         const QByteArray &counterBlock2 = QByteArray());
     // Билетная зона «Единого» (сектора 8-12): читаются после поездок,
-    // ошибки не фатальны. s8b0/s9b0/s11b0 — накопленные нулевые блоки
-    // секторов 8, 9 и 11 (известные поля по plantain_parser)
-    void readPassBlocks(int step, const QByteArray &s8b0 = QByteArray(),
+    // ошибки не фатальны. s8b0/s8b1/s9b0/s11b0 — накопленные блоки
+    // секторов 8, 9 и 11 (известные поля по plantain_parser и дампу БСК)
+    void readPassBlocks(int step, int failCount = 0, const QByteArray &s8b0 = QByteArray(),
+                        const QByteArray &s8b1 = QByteArray(),
                         const QByteArray &s9b0 = QByteArray(),
                         const QByteArray &s11b0 = QByteArray());
     // Тройка: auth сектора 8 + проверка магии записи, затем дочитка

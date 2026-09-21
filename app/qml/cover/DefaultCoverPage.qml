@@ -21,7 +21,10 @@ CoverBackground {
                             ? Theme.fontSizeLarge : Theme.fontSizeMedium
             color: Theme.highlightColor
             text: cardReader.state === CardReader.Result
-                  ? cardReader.balanceText : qsTr("Проездной")
+                  ? (cardReader.passDaysLeft >= 0
+                     ? qsTr("%1 д.").arg(cardReader.passDaysLeft)
+                     : cardReader.balanceText)
+                  : qsTr("Проездной")
         }
 
         Label {
@@ -29,7 +32,8 @@ CoverBackground {
             visible: cardReader.state === CardReader.Result
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
-            text: qsTr("баланс")
+            text: cardReader.passDaysLeft >= 0
+                  ? qsTr("осталось") : qsTr("баланс")
         }
     }
 }

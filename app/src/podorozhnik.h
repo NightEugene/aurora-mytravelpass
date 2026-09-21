@@ -16,17 +16,25 @@ namespace Podorozhnik {
 
 // Ключи секторов, используемые приложением (только чтение)
 extern const QByteArray keyDefault;   // FFFFFFFFFFFF — сектор 0 (номер карты)
+extern const QByteArray keyMad;       // A0A1A2A3A4A5 — MAD-ключ сектора 0 (БСК)
 extern const QByteArray sector4KeyA;  // E56AC127DD45 — сектор 4 (баланс)
 extern const QByteArray sector4KeyB;  // 19FC84A3784B — запасной ключ сектора 4
 extern const QByteArray sector5KeyA;  // 77DABC9825E1 — сектор 5 (поездки)
 extern const QByteArray sector5KeyB;  // 9764FEC3154A — запасной ключ сектора 5
-// Билетная зона (проездные «Единый» и др.), сектора 8-12 — ключи A
-// из полной таблицы plantain.c (Flipper Zero firmware)
+// Билетная зона (проездные «Единый» и др.), сектора 8-12 — ключи
+// из полной таблицы plantain.c (Flipper Zero firmware). Ключ B нужен
+// на картах с ужатыми access bits (напр., БСК): там блок 0 сектора 8
+// по ключу A не читается (auth успешен, чтение — NAK).
 extern const QByteArray sector8KeyA;  // 26973EA74321
+extern const QByteArray sector8KeyB;  // D27058C6E2C7
 extern const QByteArray sector9KeyA;  // EB0A8FF88ADE
+extern const QByteArray sector9KeyB;  // 578A9ADA41E3
 extern const QByteArray sector10KeyA; // EA0FD73CB149
+extern const QByteArray sector10KeyB; // 29C35FA068FB
 extern const QByteArray sector11KeyA; // C76BF71A2509
+extern const QByteArray sector11KeyB; // 9BA241DB3F56
 extern const QByteArray sector12KeyA; // ACFFFFFFFFFF
+extern const QByteArray sector12KeyB; // 71F3A315AD26
 
 // Печатный номер карты: «9643 3078 » + 7-байтовый LE-номер из блока 0
 // + контрольная цифра Луна (как в metrodroid getSerial()).
@@ -74,10 +82,14 @@ bool countersFromBlocks(const QByteArray &block1, const QByteArray &block2,
 QString monthYearText(quint32 minutes);
 
 // Билетная зона (проездные): побайтовый формат публично не
-// задокументирован; известные поля — по plantain_parser (app.py).
+// задокументирован; известные поля — по plantain_parser (app.py),
+// уточнены по эталонному дампу БСК (MCT).
 // Дата окончания проездного: сектор 8, блок 0, байты 10-12 —
-// [год-2000, месяц, день+1]; невалидная QDate, если поле пустое или мусор.
+// [год-2000, месяц, день]; невалидная QDate, если поле пустое или мусор.
 QDate passExpiryFromBlock(const QByteArray &block);
+// Дата начала текущего периода проездного: сектор 8, блок 1, байты 0-2 —
+// [год-2000, месяц, день] (у БСК — дата продления, ежемесячно).
+QDate passStartFromBlock(const QByteArray &block);
 // Счётчик поездок метро по проездному: сектор 9, блок 0 — value block
 // (значение LE, ~значение, значение). false, если блок не value block.
 bool passRidesFromBlock(const QByteArray &block, quint32 &rides);
