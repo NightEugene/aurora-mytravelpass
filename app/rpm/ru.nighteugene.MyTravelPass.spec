@@ -1,6 +1,6 @@
 Name:       ru.nighteugene.MyTravelPass
 Summary:    Проездной
-Version:    1.4.2
+Version:    1.4.3
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause

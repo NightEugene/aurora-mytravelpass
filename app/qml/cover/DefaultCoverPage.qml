@@ -33,7 +33,8 @@ CoverBackground {
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
             text: cardReader.passDaysLeft >= 0
-                  ? qsTr("осталось") : qsTr("баланс")
+                  ? qsTr("до %1").arg(cardReader.passExpiryText)
+                  : qsTr("баланс")
         }
     }
 }

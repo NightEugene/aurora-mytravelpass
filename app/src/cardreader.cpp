@@ -155,6 +155,7 @@ void CardReader::refresh()
     m_groundTrips = 0;
     m_tripsPeriod.clear();
     m_passDaysLeft = -1;
+    m_passExpiryText.clear();
     m_passRides.clear();
     m_errorText.clear();
     setState(Waiting);
@@ -262,6 +263,7 @@ void CardReader::readTag(const QString &tagPath)
     m_groundTrips = 0;
     m_tripsPeriod.clear();
     m_passDaysLeft = -1;
+    m_passExpiryText.clear();
     m_passRides.clear();
     setState(Reading);
 
@@ -653,8 +655,10 @@ void CardReader::readPassBlocks(int step, int failCount, const QByteArray &s8b0,
         }
         if (expiry.isValid()) {
             const qint64 days = QDate::currentDate().daysTo(expiry) + 1;
-            if (days > 0)
+            if (days > 0) {
                 m_passDaysLeft = int(days);
+                m_passExpiryText = expiry.toString(QStringLiteral("dd.MM.yyyy"));
+            }
         }
         quint32 rides = 0, metro = 0, ground = 0;
         if (Podorozhnik::passRidesFromBlock(s9b0, metro))

@@ -51,7 +51,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>осталось</source>
+        <source>до %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -171,6 +171,14 @@
     </message>
     <message>
         <source>%1 д.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>до %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Проездной · до %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

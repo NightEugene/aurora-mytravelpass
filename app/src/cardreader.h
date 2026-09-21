@@ -40,6 +40,7 @@ class CardReader : public QObject
     Q_PROPERTY(int groundTrips READ groundTrips NOTIFY dataChanged)
     Q_PROPERTY(QString tripsPeriod READ tripsPeriod NOTIFY dataChanged)
     Q_PROPERTY(int passDaysLeft READ passDaysLeft NOTIFY dataChanged)
+    Q_PROPERTY(QString passExpiryText READ passExpiryText NOTIFY dataChanged)
     Q_PROPERTY(QString passRides READ passRides NOTIFY dataChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorChanged)
     Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
@@ -78,6 +79,7 @@ public:
     int groundTrips() const { return m_groundTrips; }
     QString tripsPeriod() const { return m_tripsPeriod; }
     int passDaysLeft() const { return m_passDaysLeft; }
+    QString passExpiryText() const { return m_passExpiryText; }
     QString passRides() const { return m_passRides; }
     QString errorText() const { return m_errorText; }
     QStringList history() const { return m_history; }
@@ -171,6 +173,7 @@ private:
     int m_groundTrips = 0;
     QString m_tripsPeriod;
     int m_passDaysLeft = -1; // дней до конца проездного; -1 — нет/истёк
+    QString m_passExpiryText;  // «12.10.2026» — дата окончания проездного
     QString m_passRides;
     QString m_errorText;
     QStringList m_history;

@@ -144,6 +144,15 @@ Page {
                 Label {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: cardReader.state === CardReader.Result
+                             && cardReader.passDaysLeft >= 0
+                    text: qsTr("до %1").arg(cardReader.passExpiryText)
+                    color: "#E6FFFFFF"
+                    font.pixelSize: Theme.fontSizeMedium
+                }
+
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: cardReader.state === CardReader.Result
                     text: cardReader.lastReadTime
                     color: "#CCFFFFFF"
                     font.pixelSize: Theme.fontSizeMedium
@@ -535,7 +544,10 @@ Page {
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
-                                        text: qsTr("Проездной")
+                                        text: cardReader.passDaysLeft >= 0
+                                              ? qsTr("Проездной · до %1")
+                                                .arg(cardReader.passExpiryText)
+                                              : qsTr("Проездной")
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
                                     }
@@ -767,7 +779,7 @@ Page {
                                         rows.push([qsTr("Разовая поездка"), "65 ₽"])
                                         rows.push([qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"])
                                     }
-                                    rows.push([qsTr("Версия"), "1.4.2"])
+                                    rows.push([qsTr("Версия"), "1.4.3"])
                                     return rows
                                 }
 
