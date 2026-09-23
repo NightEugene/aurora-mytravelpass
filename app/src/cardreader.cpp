@@ -154,9 +154,13 @@ void CardReader::refresh()
     m_subwayTrips = 0;
     m_groundTrips = 0;
     m_tripsPeriod.clear();
+    m_cardExpiryText.clear();
+    m_purseTrips = -1;
+    m_purseRefills = -1;
     m_passDaysLeft = -1;
     m_passExpiryText.clear();
     m_passRides.clear();
+    m_passTicketName.clear();
     m_errorText.clear();
     setState(Waiting);
     emit dataChanged();
@@ -262,9 +266,13 @@ void CardReader::readTag(const QString &tagPath)
     m_subwayTrips = 0;
     m_groundTrips = 0;
     m_tripsPeriod.clear();
+    m_cardExpiryText.clear();
+    m_purseTrips = -1;
+    m_purseRefills = -1;
     m_passDaysLeft = -1;
     m_passExpiryText.clear();
     m_passRides.clear();
+    m_passTicketName.clear();
     setState(Reading);
 
     QDBusConnection::systemBus().connect(nfcService, tagPath, tagIface,
@@ -445,7 +453,13 @@ void CardReader::readTroikaBlocks(int step, const QByteArray &record)
                     || purse.lastTripTransport == QStringLiteral("МЦК")
                     || purse.lastTripTransport == QStringLiteral("Монорельс");
         }
-        finishOk();
+        if (purse.lastTopup.isValid())
+            m_lastTopupWhen = purse.lastTopup.toString(QStringLiteral("dd.MM.yyyy HH:mm"));
+        if (purse.expiry.isValid())
+            m_cardExpiryText = purse.expiry.toString(QStringLiteral("dd.MM.yyyy"));
+        m_purseTrips = purse.tripsOnPurse;
+        m_purseRefills = purse.refillCounter;
+        readTroikaTickets(0);
         return;
     }
 
@@ -464,6 +478,79 @@ void CardReader::readTroikaBlocks(int step, const QByteArray &record)
         QTimer::singleShot(retryDelayMs, this, [this, step, next] {
             if (m_state == Reading)
                 readTroikaBlocks(step + 1, next);
+        });
+    });
+}
+
+void CardReader::readTroikaTickets(int step, int failCount,
+                                   const QByteArray &s7,
+                                   const QByteArray &s4, const QByteArray &s1)
+{
+    // Билетные записи — сектора 7, 4, 1 (по 3 блока, 48 байт),
+    // ключи из troika.c (Flipper Zero). Билета может не быть:
+    // держатели пустые — тогда просто не показываем проездной.
+    static const struct { char sector; const QByteArray *keyA; const QByteArray *keyB; } zones[] = {
+        { 7, &Troika::sector7KeyA, &Troika::sector7KeyB },
+        { 4, &Troika::sector4KeyA, &Troika::sector4KeyB },
+        { 1, &Troika::sector1KeyA, &Troika::sector1KeyB },
+    };
+    const int blocksPerSector = 3;
+    const int total = int(sizeof(zones) / sizeof(zones[0])) * blocksPerSector;
+    if (step >= total) {
+        const QByteArray records[] = { s7, s4, s1 };
+        for (const QByteArray &record : records) {
+            const Troika::TicketInfo ticket = Troika::ticketFromRecord(record);
+            if (!ticket.present)
+                continue;
+            qDebug("Тройка, билет: тип 0x%1 «%2», поездок %3, до %4",
+                   QString::number(ticket.ticketType, 16), ticket.ticketName,
+                   QString::number(ticket.remainingTrips),
+                   ticket.validityEnd.toString(QStringLiteral("dd.MM.yyyy")));
+            m_passTicketName = ticket.ticketName;
+            if (ticket.remainingTrips > 0)
+                m_passRides = QString::number(ticket.remainingTrips);
+            if (ticket.validityEnd.isValid()) {
+                const QDate end = ticket.validityEnd.date();
+                const qint64 days = QDate::currentDate().daysTo(end) + 1;
+                if (days > 0) {
+                    m_passDaysLeft = int(days);
+                    m_passExpiryText = end.toString(QStringLiteral("dd.MM.yyyy"));
+                }
+            }
+            break;
+        }
+        finishOk();
+        return;
+    }
+
+    const int zone = step / blocksPerSector;
+    const int blockInSector = step % blocksPerSector;
+    const char block = char(zones[zone].sector * 4 + blockInSector);
+    const bool keyB = failCount % 2 == 1;
+    authAndRead(m_flavor, keyB, m_uidLeft, block,
+                *(keyB ? zones[zone].keyB : zones[zone].keyA),
+                [this, step, zone, blockInSector, s7, s4, s1](const QByteArray &block) {
+        // На ST-стеке блок урезан до 15 байт — добиваем нулевым
+        QByteArray data = block;
+        if (data.size() == 15)
+            data.append('\0');
+        readTroikaTickets(step + 1, 0,
+                          zone == 0 ? s7 + data : s7,
+                          zone == 1 ? s4 + data : s4,
+                          zone == 2 ? s1 + data : s1);
+    }, [this, step, failCount, s7, s4, s1](bool) {
+        QTimer::singleShot(retryDelayMs, this, [this, step, failCount, s7, s4, s1] {
+            if (m_state != Reading)
+                return;
+            if (failCount < 3) {
+                readTroikaTickets(step, failCount + 1, s7, s4, s1);
+            } else {
+                // Неудача не фатальна: блок добиваем нулями и идём дальше
+                readTroikaTickets(step + 1, 0,
+                                  step / 3 == 0 ? s7 + QByteArray(16, '\0') : s7,
+                                  step / 3 == 1 ? s4 + QByteArray(16, '\0') : s4,
+                                  step / 3 == 2 ? s1 + QByteArray(16, '\0') : s1);
+            }
         });
     });
 }

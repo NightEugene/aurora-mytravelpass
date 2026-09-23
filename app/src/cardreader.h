@@ -39,9 +39,13 @@ class CardReader : public QObject
     Q_PROPERTY(int subwayTrips READ subwayTrips NOTIFY dataChanged)
     Q_PROPERTY(int groundTrips READ groundTrips NOTIFY dataChanged)
     Q_PROPERTY(QString tripsPeriod READ tripsPeriod NOTIFY dataChanged)
+    Q_PROPERTY(QString cardExpiryText READ cardExpiryText NOTIFY dataChanged)
+    Q_PROPERTY(int purseTrips READ purseTrips NOTIFY dataChanged)
+    Q_PROPERTY(int purseRefills READ purseRefills NOTIFY dataChanged)
     Q_PROPERTY(int passDaysLeft READ passDaysLeft NOTIFY dataChanged)
     Q_PROPERTY(QString passExpiryText READ passExpiryText NOTIFY dataChanged)
     Q_PROPERTY(QString passRides READ passRides NOTIFY dataChanged)
+    Q_PROPERTY(QString passTicketName READ passTicketName NOTIFY dataChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorChanged)
     Q_PROPERTY(QStringList history READ history NOTIFY historyChanged)
 
@@ -78,9 +82,13 @@ public:
     int subwayTrips() const { return m_subwayTrips; }
     int groundTrips() const { return m_groundTrips; }
     QString tripsPeriod() const { return m_tripsPeriod; }
+    QString cardExpiryText() const { return m_cardExpiryText; }
+    int purseTrips() const { return m_purseTrips; }
+    int purseRefills() const { return m_purseRefills; }
     int passDaysLeft() const { return m_passDaysLeft; }
     QString passExpiryText() const { return m_passExpiryText; }
     QString passRides() const { return m_passRides; }
+    QString passTicketName() const { return m_passTicketName; }
     QString errorText() const { return m_errorText; }
     QStringList history() const { return m_history; }
 
@@ -145,6 +153,12 @@ private:
     // блоков 33-34 и разбор 48-байтовой записи (troika.cpp)
     void tryTroikaKeys(int index);
     void readTroikaBlocks(int step, const QByteArray &record = QByteArray());
+    // Билетные записи Тройки — сектора 7, 4, 1 (по 3 блока), после кошелька;
+    // ошибки не фатальны (билета может не быть — держатели пустые)
+    void readTroikaTickets(int step, int failCount = 0,
+                           const QByteArray &s7 = QByteArray(),
+                           const QByteArray &s4 = QByteArray(),
+                           const QByteArray &s1 = QByteArray());
 
     QString m_adapterPath;
     QString m_tagPath;
@@ -172,9 +186,13 @@ private:
     int m_subwayTrips = 0;
     int m_groundTrips = 0;
     QString m_tripsPeriod;
+    QString m_cardExpiryText; // «Тройка»: срок действия карты
+    int m_purseTrips = -1;    // «Тройка» E5: счётчик поездок по кошельку
+    int m_purseRefills = -1;  // «Тройка» E5: счётчик пополнений
     int m_passDaysLeft = -1; // дней до конца проездного; -1 — нет/истёк
     QString m_passExpiryText;  // «12.10.2026» — дата окончания проездного
     QString m_passRides;
+    QString m_passTicketName;  // «Тройка»: название билета («60 поездок»…)
     QString m_errorText;
     QStringList m_history;
 };

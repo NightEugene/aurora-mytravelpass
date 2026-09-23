@@ -447,7 +447,8 @@ Page {
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
                                 visible: cardReader.state === CardReader.Result
-                                         && cardReader.cardKind === CardReader.KindPodorozhnik
+                                         && (cardReader.cardKind === CardReader.KindPodorozhnik
+                                             || cardReader.passRides.length > 0)
 
                                 // Автобус (своей иконкой, в теме её нет) + метро
                                 Row {
@@ -493,7 +494,9 @@ Page {
                                         font.pixelSize: Theme.fontSizeSmall
                                     }
                                     Label {
-                                        text: qsTr("Метро + Наземный")
+                                        text: cardReader.passTicketName.length > 0
+                                              ? cardReader.passTicketName
+                                              : qsTr("Метро + Наземный")
                                         color: Theme.secondaryColor
                                         font.pixelSize: Theme.fontSizeExtraSmall
                                     }
@@ -520,7 +523,8 @@ Page {
                                 radius: Theme.paddingMedium
                                 color: page.plateColor
                                 visible: cardReader.state === CardReader.Result
-                                         && cardReader.cardKind === CardReader.KindPodorozhnik
+                                         && (cardReader.cardKind === CardReader.KindPodorozhnik
+                                             || cardReader.passDaysLeft >= 0)
 
                                 Image {
                                     x: Theme.paddingMedium
@@ -760,7 +764,8 @@ Page {
 
                             Repeater {
                                 // Счётчики поездок и тарифы — специфичны для
-                                // «Подорожника»; для «Тройки» не показываем
+                                // «Подорожника»; у «Тройки» — срок действия
+                                // карты и счётчики кошелька (layout E5)
                                 model: {
                                     var rows = [
                                         [qsTr("Номер карты"), cardReader.cardNumber],
@@ -779,7 +784,21 @@ Page {
                                         rows.push([qsTr("Разовая поездка"), "65 ₽"])
                                         rows.push([qsTr("Пересадки (60 мин)"), "65 + 14 ₽, далее 0 ₽"])
                                     }
-                                    rows.push([qsTr("Версия"), "1.4.3"])
+                                    if (cardReader.cardKind === CardReader.KindTroika) {
+                                        if (cardReader.passTicketName.length > 0)
+                                            rows.push([qsTr("Проездной"),
+                                                       cardReader.passTicketName])
+                                        if (cardReader.cardExpiryText.length > 0)
+                                            rows.push([qsTr("Карта действует до"),
+                                                       cardReader.cardExpiryText])
+                                        if (cardReader.purseTrips >= 0)
+                                            rows.push([qsTr("Поездок по кошельку"),
+                                                       String(cardReader.purseTrips)])
+                                        if (cardReader.purseRefills >= 0)
+                                            rows.push([qsTr("Пополнений"),
+                                                       String(cardReader.purseRefills)])
+                                    }
+                                    rows.push([qsTr("Версия"), "1.4.4"])
                                     return rows
                                 }
 

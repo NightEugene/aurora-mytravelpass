@@ -181,5 +181,17 @@
         <source>Проездной · до %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Карта действует до</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Поездок по кошельку</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Пополнений</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>
