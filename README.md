@@ -8,21 +8,21 @@
 NFC-стека (nfcd).
 
 <p align="center">
-  <img src="screenshots/app-waiting.png" width="180"
+  <img src="screenshots/1-app-waiting.png" width="180"
        alt="Ожидание карты" />
-  <img src="screenshots/app-balance.png" width="180"
+  <img src="screenshots/2-app-balance.png" width="180"
        alt="Подорожник: баланс и поездки" />
-  <img src="screenshots/app-pass.png" width="180"
+  <img src="screenshots/3-app-pass.png" width="180"
        alt="Подорожник: проездной, остаток дней" />
-  <img src="screenshots/app-troika.png" width="180"
+  <img src="screenshots/4-app-troika.png" width="180"
        alt="Тройка: баланс, поездка и пополнение" />
-  <img src="screenshots/app-troika-info.png" width="180"
+  <img src="screenshots/5-app-troika-info.png" width="180"
        alt="Тройка: информация о карте" />
-  <img src="screenshots/app-history.png" width="180"
+  <img src="screenshots/6-app-history.png" width="180"
        alt="История чтений" />
-  <img src="screenshots/app-info.png" width="180"
+  <img src="screenshots/7-app-info.png" width="180"
        alt="Информация о карте" />
-  <img src="screenshots/app-cover.png" width="180"
+  <img src="screenshots/8-app-cover.png" width="180"
        alt="Обложка приложения" />
 </p>
 
